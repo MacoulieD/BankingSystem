@@ -1,0 +1,6 @@
+Grupo Sabados 503 7 AM 
+Integrantes:
+Angela Cordoba/ Aporte del código: Atributos de la clase Userregister, Constructor de la clase Userregister, Getters y Setters de la clase Userregister
+Daniel Guerras/ Aporte del código: Getters y Setters de la clase Userregister, Atributos de la clase Login, Getters y Setters de la clase Login
+Edwin Potes/ Aporte de código: étodo para solicitar el nombre de usuario y la contraseña al usuario, Método para validar el inicio de sesión
+Andrés Diaz/ conectar con la clase Userregister y Login, Clase Main.
