@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 public class Person {
     private int id;
     private String name;
-    private String telephone;
+    private int telephone;
     private String email;
     private String username;
     private double initialBalance;
@@ -20,7 +20,7 @@ public class Person {
         this.blockedUntil = null;
     }
 
-    public Person(int id, String name, String telephone, String email, String username, double initialBalance, String password) {
+    public Person(int id, String name, int telephone, String email, String username, double initialBalance, String password) {
         this.id = id;
         this.name = name;
         this.telephone = telephone;
@@ -37,8 +37,8 @@ public class Person {
     public void setId(int id) { this.id = id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-    public String getTelephone() { return telephone; }
-    public void setTelephone(String telephone) { this.telephone = telephone; }
+    public int getTelephone() { return telephone; }
+    public void setTelephone(int telephone) { this.telephone = telephone; }
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
     public String getEmail() { return email; }
@@ -65,10 +65,6 @@ public class Person {
         this.blockedUntil = blockedUntil;
     }
 
-    /**
-     * Verifica si la cuenta está bloqueada comparando la hora actual
-     * con la hora almacenada en blockedUntil.
-     */
     public boolean isAccountBlocked() {
         if (blockedUntil == null) {
             return false;

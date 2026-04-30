@@ -1,26 +1,38 @@
 package bankingsystem.services;
 
 import bankingsystem.domain.Person;
+import bankingsystem.domain.enums.TypoCuenta;
 import bankingsystem.repository.PersonRepository;
 import bankingsystem.utils.PersonFormValidation;
 
-public class PersonServiceImpl implements PersonService {
-    private final PersonRepository personRepository;
 
-    public PersonServiceImpl(PersonRepository personRepository) {
+public class PersonServiceImpl implements PersonService {
+
+    private final PersonRepository personRepository;
+    private final CuentaServices cuentaService; // Inyectamos la interfaz general
+
+
+    public PersonServiceImpl(PersonRepository personRepository, CuentaServices cuentaService) {
         this.personRepository = personRepository;
+        this.cuentaService = cuentaService;
     }
 
     @Override
     public Person createPerson() {
         System.out.println("\n--- FORMULARIO DE REGISTRO ---");
 
-        int id = PersonFormValidation.validateInt("Ingrese su identificación: ");
-        String name = PersonFormValidation.validateStringName("Ingrese su nombre completo: ");
-        String phone = PersonFormValidation.validateStringPhone("Ingrese su celular: ");
-        String email = PersonFormValidation.validateString("Ingrese su email: ");
 
-        String username;
+        int id, telephone;
+        String name, email, username, password;
+        double initialBalance;
+
+
+        id = PersonFormValidation.validateInt("Ingrese su identificación: ");
+        name = PersonFormValidation.validateStringName("Ingrese su nombre completo: ");
+        telephone = PersonFormValidation.validateInt("Ingrese su celular: ");
+        email = PersonFormValidation.validateString("Ingrese su email: ");
+
+
         while (true) {
             username = PersonFormValidation.validateString("Ingrese su nombre de usuario: ");
             if (personRepository.existsByUsername(username)) {
@@ -30,26 +42,50 @@ public class PersonServiceImpl implements PersonService {
             }
         }
 
-        double balance = PersonFormValidation.validateDouble("Ingrese su saldo inicial: ");
 
-        String password, repeatPassword;
         while (true) {
             password = PersonFormValidation.validateString("Ingrese su contraseña: ");
-            repeatPassword = PersonFormValidation.validateString("Confirme su contraseña: ");
+            String repeatPassword = PersonFormValidation.validateString("Confirme su contraseña: ");
             if (PersonFormValidation.validatePassword(password, repeatPassword)) {
                 break;
             }
         }
 
-        Person newPerson = new Person(id, name, phone, email, username, balance, password);
+
+        initialBalance = PersonFormValidation.validateDouble("Ingrese el saldo inicial para la apertura: ");
+
+
+        System.out.println("\n¿Qué tipo de cuenta desea abrir?");
+        System.out.println("1. Cuenta de Ahorros");
+        System.out.println("2. Cuenta Corriente");
+        int tipoCuenta = PersonFormValidation.validateInt("Seleccione una opción: ");
+
+
+        if (tipoCuenta == 1 || tipoCuenta == 2) {
+
+            cuentaService.crearCuenta(username, initialBalance, TypoCuenta.desdeId(tipoCuenta));
+
+            String mensaje = (tipoCuenta == 1) ? "Ahorros" : "Corriente";
+            System.out.println("✅ Solicitud de Cuenta de " + mensaje + " procesada.");
+        } else {
+            System.out.println("⚠️ Opción no válida. El perfil se creará sin cuenta activa.");
+        }
+
+
+        Person newPerson = new Person(id, name, telephone, email, username, initialBalance, password);
         Person saved = personRepository.save(newPerson);
 
-        System.out.println("\n✅ ¡Registro exitoso!");
+        System.out.println("\n✅ ¡Registro de usuario y cuenta completado con éxito!");
         return saved;
     }
 
-    @Override public Person getPersonById(int id) { return personRepository.findById(id); }
-    @Override public Person getPersonByEmail(String email) { return null; }
-    @Override public Person updatePerson(int id) { return null; }
-    @Override public void deletePerson(int id) { personRepository.deleteById(id); }
+    @Override
+    public Person updatePerson(int id) {
+        return null;
+    }
+
+    @Override
+    public void deletePerson(int id) {
+        personRepository.deleteById(id);
+    }
 }

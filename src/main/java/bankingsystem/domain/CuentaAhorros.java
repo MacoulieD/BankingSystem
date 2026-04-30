@@ -1,30 +1,50 @@
 package bankingsystem.domain;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
-public class CuentaAhorros {
-    private String numeroCuenta;
-    private double saldo;
-    private final double tasaInteres = 0.015;
-    private List<String> movimientos; // Simulación simple de historial
+public class CuentaAhorros extends Cuenta {
 
-    public CuentaAhorros(String numeroCuenta, double saldoInicial) {
-        this.numeroCuenta = numeroCuenta;
-        this.saldo = saldoInicial;
-        this.movimientos = new ArrayList<>();
-        this.movimientos.add("Apertura de cuenta con: $" + saldoInicial);
+    private final double tasaInteres = 0.015;
+
+    public CuentaAhorros(String numeroCuenta, double saldo, String propietario) {
+
+        super(numeroCuenta, saldo, propietario);
     }
 
-    // Getters y Setters
-    public String getNumeroCuenta() { return numeroCuenta; }
-    public double getSaldo() { return saldo; }
-    public void setSaldo(double saldo) { this.saldo = saldo; }
-    public double getTasaInteres() { return tasaInteres; }
-    public List<String> getMovimientos() { return movimientos; }
+    // --- Getters y Setters ---
 
-    // Lógica de negocio específica
+    @Override
+    public String getNumeroCuenta() {
+        return this.numeroCuenta;
+    }
+
+    public String getTypoCuenta() {
+        return "Ahorros";
+    }
+
+    @Override
+    public double getSaldo() {
+        return this.saldo;
+    }
+
+    @Override
+    public void setSaldo(double saldo) {
+        this.saldo = saldo;
+    }
+
+    public double getTasaInteres() {
+        return tasaInteres;
+    }
+
+    @Override
+    public List<String> getMovimientos() {
+        return this.movimientos;
+    }
+
+    @Override
+    public void setMovimientos(List<String> movimientos) {}
+
+
     public double calcularInteresRendimiento(double monto) {
         return monto * tasaInteres;
     }

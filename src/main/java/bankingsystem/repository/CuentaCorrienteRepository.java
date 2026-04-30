@@ -1,32 +1,39 @@
 package bankingsystem.repository;
 
+
+import bankingsystem.domain.CuentaAhorros;
 import bankingsystem.domain.CuentaCorriente;
-import java.util.HashMap;
-import java.util.Map;
+
+import java.util.ArrayList;
 
 public class CuentaCorrienteRepository {
-    // Almacenamiento en memoria usando el número de cuenta como llave
-    private final Map<String, CuentaCorriente> corrienteMap = new HashMap<>();
+    private final ArrayList<CuentaCorriente> cuentaCorrientes = new ArrayList<>();
 
-    /**
-     * Guarda o actualiza una cuenta corriente en el repositorio.
-     */
-    public void save(CuentaCorriente cuenta) {
-        corrienteMap.put(cuenta.getNumeroCuenta(), cuenta);
+    public void saveCuentaC(CuentaCorriente cuentaCorriente) {
+        cuentaCorrientes.add(cuentaCorriente);
+    }
+    public CuentaCorriente findCuentaCorriente() {
+        for (CuentaCorriente c : cuentaCorrientes) {
+        if (c.equals(cuentaCorrientes)) {}
+                return c;
+            }
+        return null;
+    }
+    public CuentaCorriente findCuentaCorrienteByNumCuenta(String numCuenta) {
+        for (CuentaCorriente cuenta : cuentaCorrientes) {
+            if (cuenta.getNumeroCuenta().equals(numCuenta)) {
+                return cuenta;
+            }
+        }
+        return null;
+    }
+    public CuentaCorriente findbypropietario(String propietario) {
+        for (CuentaCorriente cuenta : cuentaCorrientes) {
+            if (cuenta.getPropietario().equals(propietario)) {
+                return cuenta;
+            }
+        }
+        return null;
     }
 
-    /**
-     * Busca una cuenta corriente por su número único.
-     * @return CuentaCorriente si existe, null en caso contrario.
-     */
-    public CuentaCorriente findCorrienteByNumero(String numero) {
-        return corrienteMap.get(numero);
-    }
-
-    /**
-     * Verifica si una cuenta ya existe para evitar duplicados en el registro.
-     */
-    public boolean exists(String numero) {
-        return corrienteMap.containsKey(numero);
-    }
 }

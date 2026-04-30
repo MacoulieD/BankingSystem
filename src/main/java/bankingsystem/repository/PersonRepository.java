@@ -9,7 +9,6 @@ public class PersonRepository {
     // Lista en memoria para simular la base de datos
     private List<Person> persons = new ArrayList<>();
 
-    // Guarda una nueva persona en la lista
     public Person save(Person person) {
         persons.add(person);
         return person;

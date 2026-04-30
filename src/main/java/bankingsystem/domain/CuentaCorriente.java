@@ -1,29 +1,56 @@
 package bankingsystem.domain;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class CuentaCorriente {
-    private String numeroCuenta;
-    private double saldo;
-    private final double porcentajeSobregiro = 0.20;
-    private List<String> movimientos;
+public class CuentaCorriente extends Cuenta {
+    private double cupoSobregiro;
 
-    public CuentaCorriente(String numeroCuenta, double saldoInicial) {
+    public CuentaCorriente(String numeroCuenta, double saldo, String propietario, double cupoSobregiro) {
+        super(numeroCuenta, saldo, propietario);
+        this.cupoSobregiro = cupoSobregiro;
+    }
+
+    // --- Getters y Setters ---
+
+    @Override
+    public String getNumeroCuenta() {
+        return this.numeroCuenta;
+    }
+
+    @Override
+    public void setNumeroCuenta(String numeroCuenta) {
         this.numeroCuenta = numeroCuenta;
-        this.saldo = saldoInicial;
-        this.movimientos = new ArrayList<>();
-        this.movimientos.add("Apertura de Cuenta Corriente: $" + saldoInicial);
     }
 
-    public double getLimiteDisponible() {
-        // Permite el saldo actual + el 20% del mismo
-        return saldo > 0 ? saldo + (saldo * porcentajeSobregiro) : 0;
+    @Override
+    public double getSaldo() {
+        return this.saldo;
     }
 
-    // Getters y Setters
-    public String getNumeroCuenta() { return numeroCuenta; }
-    public double getSaldo() { return saldo; }
-    public void setSaldo(double saldo) { this.saldo = saldo; }
-    public List<String> getMovimientos() { return movimientos; }
+    @Override
+    public void setSaldo(double saldo) {
+        this.saldo = saldo;
+    }
+
+    public double getCupoSobregiro() {
+        return cupoSobregiro;
+    }
+
+    public void setCupoSobregiro(double cupoSobregiro) {
+        this.cupoSobregiro = cupoSobregiro;
+    }
+
+    @Override
+    public List<String> getMovimientos() {
+        return this.movimientos;
+    }
+
+    @Override
+    public void setMovimientos(List<String> movimientos) {
+        this.movimientos = movimientos;
+    }
+
+    public String getTypoCuenta() {
+        return "Corriente";
+    }
 }

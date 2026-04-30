@@ -47,7 +47,6 @@ public class PersonFormValidation {
     }
     public static String validateStringName(String prompt) {
         while (true) {
-            // Primero nos aseguramos de que no sea un string vacío usando el método base
             String value = validateString(prompt);
 
             if (value.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$")) {
@@ -58,9 +57,9 @@ public class PersonFormValidation {
         }
     }
 
-    public static String validateStringPhone(String prompt) {
+    public static String validateintPhone(String prompt) {
         while (true) {
-            String value = validateString(prompt);
+            String value = validateintPhone(prompt);
             if (value.matches("^[0-9]+$")) {
                 // Opcional: Validar que tenga una longitud mínima (ej. 10 para celular)
                 if (value.length() >= 7 && value.length() <= 15) {
