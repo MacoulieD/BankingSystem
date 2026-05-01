@@ -4,7 +4,8 @@ import bankingsystem.Config.Config;
 import bankingsystem.userinterface.MenuApp;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] ignoredArgs) {
+
         // Inicializamos la aplicación mediante la configuración
         MenuApp app = Config.createMenuApp();
 

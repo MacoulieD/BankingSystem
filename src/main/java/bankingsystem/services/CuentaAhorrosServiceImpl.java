@@ -71,18 +71,17 @@ public class CuentaAhorrosServiceImpl implements CuentaAhorrosServices {
 
     @Override
     public Cuenta consultarEstado(String username) {
-        return null;
+        return cuentaRepository.fidByPropietario(username);
     }
 
     @Override
     public CuentaAhorros buscarCuenta(String numeroCuenta) {
-
-        return cuentaRepository.findCuentaAhorros();
+        return cuentaRepository.findCuentaAhorrosByNumCuenta(numeroCuenta);
     }
 
     @Override
     public CuentaAhorros obtenerCuenta(String username) {
-        return null;
+        return cuentaRepository.fidByPropietario(username);
     }
 
 }

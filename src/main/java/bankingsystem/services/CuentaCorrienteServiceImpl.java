@@ -1,10 +1,8 @@
 package bankingsystem.services;
 
 import bankingsystem.domain.Cuenta;
-import bankingsystem.domain.CuentaAhorros;
 import bankingsystem.domain.CuentaCorriente;
 import bankingsystem.repository.CuentaCorrienteRepository;
-import bankingsystem.repository.CuentaRepository;
 
 
 public class CuentaCorrienteServiceImpl implements CuentaCorrienteServices {
@@ -73,15 +71,15 @@ public class CuentaCorrienteServiceImpl implements CuentaCorrienteServices {
     }
     @Override
     public Cuenta consultarCuenta(String username) {
-        return null;
+        return repo.findbypropietario(username);
     }
     @Override
     public Cuenta obtenerCuenta(String username) {
-        return null;
+        return repo.findbypropietario(username);
     }
 
     @Override
     public CuentaCorriente buscarCuenta(String username) {
-        return repo.findCuentaCorriente();
+        return repo.findbypropietario(username);
     }
 }

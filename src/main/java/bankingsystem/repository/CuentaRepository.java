@@ -1,6 +1,7 @@
 package bankingsystem.repository;
 
 import bankingsystem.domain.Cuenta;
+import bankingsystem.domain.enums.TypoCuenta;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,15 +17,38 @@ public class CuentaRepository {
         return cuentas;
     }
 
-    public Cuenta findCuentaBynumCuenta(String identificador) {
+    public Cuenta findByNumeroCuenta(String numeroCuenta) {
         for (Cuenta cuenta : cuentas) {
-            if (cuenta.getNumeroCuenta() != null && cuenta.getNumeroCuenta().equalsIgnoreCase(identificador)) {
-                return cuenta;
-            }
-            if (cuenta.getPropietario() != null && cuenta.getPropietario().equalsIgnoreCase(identificador)) {
+            if (cuenta.getNumeroCuenta() != null && cuenta.getNumeroCuenta().equalsIgnoreCase(numeroCuenta)) {
                 return cuenta;
             }
         }
         return null;
+    }
+
+    public List<Cuenta> findByPropietario(String propietario) {
+        List<Cuenta> resultado = new ArrayList<>();
+        for (Cuenta cuenta : cuentas) {
+            if (cuenta.getPropietario() != null && cuenta.getPropietario().equalsIgnoreCase(propietario)) {
+                resultado.add(cuenta);
+            }
+        }
+        return resultado;
+    }
+
+    public Cuenta findByPropietarioAndTipo(String propietario, TypoCuenta tipo) {
+        for (Cuenta cuenta : cuentas) {
+            if (cuenta.getPropietario() != null
+                    && cuenta.getPropietario().equalsIgnoreCase(propietario)
+                    && cuenta.getTipo() == tipo) {
+                return cuenta;
+            }
+        }
+        return null;
+    }
+
+    // Compatibilidad temporal con código legado.
+    public Cuenta findCuentaBynumCuenta(String identificador) {
+        return findByNumeroCuenta(identificador);
     }
 }

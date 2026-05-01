@@ -15,7 +15,7 @@ public abstract class Cuenta {
         this.numeroCuenta = numeroCuenta;
         this.saldo = saldo;
         this.propietario = propietario;
-        this.tipo = tipo; //Correjir no toma el tipó de cuenta(1/2)
+        this.tipo = null;
         this.movimientos = new ArrayList<>();
     }
 
