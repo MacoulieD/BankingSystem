@@ -20,12 +20,20 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
                 .orElse(null);
 
         if (tc == null) {
-            throw new RuntimeException("❌ No tienes una Tarjeta de Crédito activa.");
+            throw new RuntimeException("No tienes una tarjeta de crédito activa.");
+        }
+
+        if (monto <= 0) {
+            throw new RuntimeException("El valor de la compra debe ser mayor a cero.");
+        }
+
+        if (cuotas <= 0) {
+            throw new RuntimeException("El número de cuotas debe ser mayor a cero.");
         }
 
 
         if (tc.getCupoDisponible() < monto) {
-            throw new RuntimeException("❌ Cupo insuficiente. Disponible: $" + tc.getCupoDisponible());
+            throw new RuntimeException("Cupo insuficiente. Disponible: $" + tc.getCupoDisponible());
         }
 
 
@@ -37,8 +45,6 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
 
         tc.getMovimientos().add(String.format("Compra: +$%,.2f (%d cuotas de $%,.2f - %s)",
                 monto, cuotas, valorCuota, obs));
-
-        System.out.printf("✅ Compra exitosa. Cuota mensual: $%,.2f (%s)%n", valorCuota, obs);
     }
 
     @Override
@@ -50,18 +56,20 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
                 .orElse(null);
 
         if (tc == null) {
-            throw new RuntimeException("❌ No se encontró la tarjeta.");
+            throw new RuntimeException("No se encontró la tarjeta.");
+        }
+
+        if (monto <= 0) {
+            throw new RuntimeException("El monto de pago debe ser mayor a cero.");
         }
 
         if (monto > tc.getSaldo()) {
-            throw new RuntimeException("❌ El pago excede la deuda actual ($" + tc.getSaldo() + ")");
+            throw new RuntimeException("El pago excede la deuda actual ($" + tc.getSaldo() + ")");
         }
 
 
         tc.setSaldo(tc.getSaldo() - monto);
         tc.getMovimientos().add(String.format("Pago realizado: -$%,.2f", monto));
-
-        System.out.println("✅ Pago aplicado con éxito. Cupo liberado.");
     }
 
     @Override

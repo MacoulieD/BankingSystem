@@ -102,6 +102,81 @@ public class CuentaServicesImpl implements CuentaServices {
     }
 
     @Override
+    public void transferirEntrePropias(String username, TypoCuenta tipoOrigen, TypoCuenta tipoDestino, double monto) {
+        if (tipoOrigen == tipoDestino) {
+            throw new RuntimeException("No puedes transferir al mismo tipo de cuenta propia.");
+        }
+
+        Cuenta origen = obtenerCuenta(username, tipoOrigen);
+        Cuenta destino = obtenerCuenta(username, tipoDestino);
+
+        if (destino == null) {
+            throw new RuntimeException("No tienes cuenta destino del tipo seleccionado.");
+        }
+
+        ejecutarTransferencia(origen, destino, monto, "Transferencia propia");
+    }
+
+    @Override
+    public void transferirATercero(String usernameOrigen, TypoCuenta tipoOrigen, String numeroCuentaDestino, double monto) {
+        Cuenta origen = obtenerCuenta(usernameOrigen, tipoOrigen);
+        Cuenta destino = repository.findByNumeroCuenta(numeroCuentaDestino);
+
+        if (destino == null) {
+            throw new RuntimeException("La cuenta destino no existe.");
+        }
+
+        if (origen != null && origen.getNumeroCuenta().equalsIgnoreCase(destino.getNumeroCuenta())) {
+            throw new RuntimeException("No puedes transferir a la misma cuenta de origen.");
+        }
+
+        if (destino.getPropietario().equalsIgnoreCase(usernameOrigen) && destino.getTipo() == tipoOrigen) {
+            throw new RuntimeException("No puedes transferir al mismo tipo de cuenta propia.");
+        }
+
+        ejecutarTransferencia(origen, destino, monto, "Transferencia a tercero");
+    }
+
+    private void ejecutarTransferencia(Cuenta origen, Cuenta destino, double monto, String concepto) {
+        if (origen == null) {
+            throw new RuntimeException("No se encontró la cuenta origen para el tipo seleccionado.");
+        }
+        if (monto <= 0) {
+            throw new RuntimeException("El monto a transferir debe ser mayor a cero.");
+        }
+
+        validarCuentaTransferible(origen, "origen");
+        validarCuentaTransferible(destino, "destino");
+
+        if (origen.getSaldo() < monto) {
+            throw new RuntimeException("Saldo insuficiente para realizar la transferencia.");
+        }
+
+        origen.setSaldo(origen.getSaldo() - monto);
+        destino.setSaldo(destino.getSaldo() + monto);
+
+        String debito = String.format("%s enviada a %s (%s): -$%,.2f",
+                concepto,
+                destino.getNumeroCuenta(),
+                destino.getPropietario(),
+                monto);
+        String credito = String.format("%s recibida desde %s (%s): +$%,.2f",
+                concepto,
+                origen.getNumeroCuenta(),
+                origen.getPropietario(),
+                monto);
+
+        origen.getMovimientos().add(debito);
+        destino.getMovimientos().add(credito);
+    }
+
+    private void validarCuentaTransferible(Cuenta cuenta, String rol) {
+        if (cuenta.getTipo() == TypoCuenta.TARJETA_CREDITO) {
+            throw new RuntimeException("No se permiten transferencias con tarjeta de crédito como " + rol + ".");
+        }
+    }
+
+    @Override
     public Cuenta obtenerCuenta(String username, TypoCuenta tipo) {
         return repository.findByPropietarioAndTipo(username, tipo);
     }
