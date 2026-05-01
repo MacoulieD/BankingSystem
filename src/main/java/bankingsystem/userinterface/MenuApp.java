@@ -75,6 +75,7 @@ public class MenuApp {
             System.out.println("7. Submenú Tarjeta de Crédito");
             System.out.println("8. Aperturar Cuenta Faltante (Ahorros/Corriente)");
             System.out.println("9. Transferencias");
+            System.out.println("10. Editar Mis Datos");
             System.out.println("0. Cerrar Sesión");
 
             userOption = PersonFormValidation.validateInt("Seleccione operación: ");
@@ -91,6 +92,11 @@ public class MenuApp {
                 aperturarCuentaFaltante(user.getUsername());
             } else if (userOption == 9) {
                 cuentaView.transferirDinero(user.getUsername());
+            } else if (userOption == 10) {
+                Person actualizado = personView.updateLoggedPerson(user.getUsername());
+                if (actualizado != null) {
+                    user = actualizado;
+                }
             } else if (userOption == 0) {
                 System.out.println("👋 Cerrando sesión...");
             } else {

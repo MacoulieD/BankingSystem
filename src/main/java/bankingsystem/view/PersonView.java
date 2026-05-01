@@ -1,5 +1,6 @@
 package bankingsystem.view;
 
+import bankingsystem.domain.Person;
 import bankingsystem.services.PersonService;
 import bankingsystem.utils.PersonFormValidation;
 
@@ -15,6 +16,10 @@ public class PersonView {
 
     public void updatePerson(){
         personService.updatePerson(PersonFormValidation.validateInt("Ingrese el ID"));
+    }
+
+    public Person updateLoggedPerson(String username){
+        return personService.updatePersonByUsername(username);
     }
 
         public void deletePerson(){
