@@ -1,5 +1,6 @@
 package bankingsystem.domain;
 
+import bankingsystem.domain.enums.TypoCuenta;
 import java.util.List;
 
 public class CuentaAhorros extends Cuenta {
@@ -9,6 +10,7 @@ public class CuentaAhorros extends Cuenta {
     public CuentaAhorros(String numeroCuenta, double saldo, String propietario) {
 
         super(numeroCuenta, saldo, propietario);
+        this.tipo = TypoCuenta.AHORROS;
     }
 
     // --- Getters y Setters ---

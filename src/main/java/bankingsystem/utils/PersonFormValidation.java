@@ -59,7 +59,8 @@ public class PersonFormValidation {
 
     public static String validateintPhone(String prompt) {
         while (true) {
-            String value = validateintPhone(prompt);
+            System.out.print(prompt);
+            String value = sc.nextLine().trim();
             if (value.matches("^[0-9]+$")) {
                 // Opcional: Validar que tenga una longitud mínima (ej. 10 para celular)
                 if (value.length() >= 7 && value.length() <= 15) {

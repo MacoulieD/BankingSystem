@@ -1,7 +1,5 @@
 package bankingsystem.repository;
 
-
-import bankingsystem.domain.CuentaAhorros;
 import bankingsystem.domain.CuentaCorriente;
 
 import java.util.ArrayList;
@@ -14,9 +12,10 @@ public class CuentaCorrienteRepository {
     }
     public CuentaCorriente findCuentaCorriente() {
         for (CuentaCorriente c : cuentaCorrientes) {
-        if (c.equals(cuentaCorrientes)) {}
+            if (c != null) {
                 return c;
             }
+        }
         return null;
     }
     public CuentaCorriente findCuentaCorrienteByNumCuenta(String numCuenta) {
@@ -29,7 +28,7 @@ public class CuentaCorrienteRepository {
     }
     public CuentaCorriente findbypropietario(String propietario) {
         for (CuentaCorriente cuenta : cuentaCorrientes) {
-            if (cuenta.getPropietario().equals(propietario)) {
+            if (cuenta.getPropietario().equalsIgnoreCase(propietario)) {
                 return cuenta;
             }
         }

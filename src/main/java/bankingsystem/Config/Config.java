@@ -28,11 +28,12 @@ public class Config {
         PersonService personService = new PersonServiceImpl(personRepo, cuentaService);
 
         LoginService loginService = new LoginServiceImpl(personRepo);
+        TarjetaCreditoServices tarjetaService = new TarjetaCreditoServiceImpl(tarjetaRepo);
 
         PersonView personView = new PersonView(personService);
         LoginView loginView = new LoginView(loginService, personRepo);
 
-        CuentaView cuentaView = new CuentaView(cuentaService);
+        CuentaView cuentaView = new CuentaView(cuentaService, tarjetaService);
 
         return new MenuApp(personView, loginView, cuentaView, cuentaService);
     }

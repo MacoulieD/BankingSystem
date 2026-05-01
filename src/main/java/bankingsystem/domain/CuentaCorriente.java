@@ -1,5 +1,6 @@
 package bankingsystem.domain;
 
+import bankingsystem.domain.enums.TypoCuenta;
 import java.util.List;
 
 public class CuentaCorriente extends Cuenta {
@@ -8,6 +9,7 @@ public class CuentaCorriente extends Cuenta {
     public CuentaCorriente(String numeroCuenta, double saldo, String propietario, double cupoSobregiro) {
         super(numeroCuenta, saldo, propietario);
         this.cupoSobregiro = cupoSobregiro;
+        this.tipo = TypoCuenta.CORRIENTE;
     }
 
     // --- Getters y Setters ---
