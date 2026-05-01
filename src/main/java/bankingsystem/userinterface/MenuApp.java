@@ -41,7 +41,7 @@ public class MenuApp {
                 case 1 -> handleLogin();
                 case 2 -> personView.createPerson();
                 case 0 -> System.out.println("Gracias por usar Mi Plata. ¡Hasta pronto!");
-                default -> System.out.println("❎ Opción no válida.");
+                default -> System.out.println("❌ Opción no válida.");
             }
         }
     }
@@ -52,6 +52,7 @@ public class MenuApp {
 
             showUserSubMenu(user);
         } else {
+            System.out.println("⚠️ Inicio de sesión fallido. Verifica tus credenciales o regístrate.");
             System.out.println("1. Registrarme");
             System.out.println("2. Volver al Menú Principal");
             int option = PersonFormValidation.validateInt("Seleccione: ");
@@ -73,6 +74,7 @@ public class MenuApp {
             System.out.println("6. Aperturar Tarjeta de Crédito");
             System.out.println("7. Submenú Tarjeta de Crédito");
             System.out.println("8. Aperturar Cuenta Faltante (Ahorros/Corriente)");
+            System.out.println("9. Transferencias");
             System.out.println("0. Cerrar Sesión");
 
             userOption = PersonFormValidation.validateInt("Seleccione operación: ");
@@ -87,10 +89,12 @@ public class MenuApp {
                 showTarjetaCreditoSubMenu(user.getUsername());
             } else if (userOption == 8) {
                 aperturarCuentaFaltante(user.getUsername());
+            } else if (userOption == 9) {
+                cuentaView.transferirDinero(user.getUsername());
             } else if (userOption == 0) {
                 System.out.println("👋 Cerrando sesión...");
             } else {
-                System.out.println("❎ Opción no válida.");
+                System.out.println("❌ Opción no válida.");
             }
         }
     }
@@ -125,7 +129,9 @@ public class MenuApp {
 
         try {
             this.cuentaService.crearCuenta(username, saldoInicial, tipoApertura);
-            System.out.println("✅ " + tipoApertura + " aperturada correctamente.");
+            Cuenta nuevaCuenta = this.cuentaService.obtenerCuentaPorTipo(username, tipoApertura);
+            String numero = (nuevaCuenta != null) ? nuevaCuenta.getNumeroCuenta() : "N/A";
+            System.out.println("✅ " + tipoApertura + " aperturada correctamente. Número: " + numero + ".");
         } catch (Exception e) {
             System.out.println("❌ No fue posible aperturar la cuenta: " + e.getMessage());
         }
@@ -146,7 +152,9 @@ public class MenuApp {
         }
 
         this.cuentaService.crearCuenta(username, 0, TypoCuenta.TARJETA_CREDITO);
-        System.out.println("✅ Tarjeta de crédito aperturada con cupo asignado de $4,000,000.");
+        Cuenta tarjetaNueva = this.cuentaService.obtenerCuentaPorTipo(username, TypoCuenta.TARJETA_CREDITO);
+        String numeroTarjeta = (tarjetaNueva != null) ? tarjetaNueva.getNumeroCuenta() : "N/A";
+        System.out.println("✅ Tarjeta de crédito aperturada. Número: " + numeroTarjeta + " | Cupo asignado: $4,000,000.");
     }
 
     private void showTarjetaCreditoSubMenu(String username) {
@@ -179,7 +187,7 @@ public class MenuApp {
                 case 3 -> cuentaView.realizarRetiro(username, TypoCuenta.TARJETA_CREDITO);
                 case 4 -> cuentaView.verMovimientos(username, TypoCuenta.TARJETA_CREDITO);
                 case 0 -> System.out.println("↩️ Volviendo al menú de usuario...");
-                default -> System.out.println("❎ Opción no válida.");
+                default -> System.out.println("❌ Opción no válida.");
             }
         }
     }
@@ -193,7 +201,7 @@ public class MenuApp {
                 .toList();
 
         if (misCuentas.isEmpty()) {
-            System.out.println("No tienes productos activos en este momento.");
+            System.out.println("ℹ️ No tienes productos activos en este momento.");
         } else {
             for (Cuenta c : misCuentas) {
                 if (c instanceof TarjetaCredito tc) {
@@ -226,7 +234,7 @@ public class MenuApp {
             if (cuentaExistente != null) {
                 ejecutarAccionBancaria(user.getUsername(), operacion, tipo);
             } else {
-                System.out.println("⚠️ Error: No posees una cuenta de tipo " + tipo + ".");
+                System.out.println("⚠️ No posees una cuenta de tipo " + tipo + ".");
                 System.out.println("Usa la opción 8 del menú para aperturar la cuenta faltante.");
             }
         } else {
@@ -240,7 +248,7 @@ public class MenuApp {
             case 2 -> cuentaView.realizarConsignacion(username, tipoCuenta);
             case 3 -> cuentaView.realizarRetiro(username, tipoCuenta);
             case 4 -> cuentaView.verMovimientos(username, tipoCuenta);
-            default -> System.out.println("Operación no válida.");
+            default -> System.out.println("❌ Operación no válida.");
         }
     }
 }

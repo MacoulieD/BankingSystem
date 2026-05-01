@@ -5,7 +5,7 @@ import bankingsystem.domain.TarjetaCredito;
 import bankingsystem.domain.enums.TypoCuenta;
 import bankingsystem.services.CuentaServices;
 import bankingsystem.services.TarjetaCreditoServices;
-import bankingsystem.utils.PersonFormValidation; // Asegúrate de tener este import para capturar montos
+import bankingsystem.utils.PersonFormValidation;
 
 
 public class CuentaView {
@@ -59,12 +59,17 @@ public class CuentaView {
             if (tipo == TypoCuenta.TARJETA_CREDITO) {
                 double montoCompra = PersonFormValidation.validateDouble("Valor de la compra: ");
                 int cuotas = PersonFormValidation.validateInt("Número de cuotas: ");
-                if (cuotas <= 0) {
-                    System.out.println("❌ El número de cuotas debe ser mayor a cero.");
-                    return;
-                }
-
                 tarjetaCreditoServices.realizarCompra(username, montoCompra, cuotas);
+
+                TarjetaCredito tarjeta = tarjetaCreditoServices.buscarTarjeta(username);
+                double valorCuota = tarjeta.calcularCuotaMensual(montoCompra, cuotas);
+                String observacion = tarjeta.getObservacionInteres(cuotas);
+
+                System.out.printf("✅ Compra registrada por $%,.2f.%n", montoCompra);
+                System.out.printf("Cuota mensual: $%,.2f (%s)%n", valorCuota, observacion);
+                System.out.printf("Deuda total: $%,.2f | Cupo disponible: $%,.2f%n",
+                        tarjeta.getSaldo(),
+                        tarjeta.getCupoDisponible());
                 return;
             }
 
@@ -73,8 +78,10 @@ public class CuentaView {
 
             cuentaServices.consignar(username, tipo, monto);
 
+            Cuenta cuentaActualizada = cuentaServices.obtenerCuenta(username, tipo);
 
-            System.out.printf("✅ Consignación de $%,.2f realizada con éxito.%n", monto);
+            System.out.printf("✅ Consignación exitosa de $%,.2f.%n", monto);
+            System.out.printf("Saldo actual de %s: $%,.2f%n", tipo, cuentaActualizada.getSaldo());
 
         } catch (Exception e) {
 
@@ -88,12 +95,21 @@ public class CuentaView {
             if (tipo == TypoCuenta.TARJETA_CREDITO) {
                 double montoPago = PersonFormValidation.validateDouble("Monto a pagar de la deuda: ");
                 tarjetaCreditoServices.pagarCuota(username, montoPago);
+
+                TarjetaCredito tarjeta = tarjetaCreditoServices.buscarTarjeta(username);
+                System.out.printf("✅ Pago aplicado por $%,.2f.%n", montoPago);
+                System.out.printf("Deuda restante: $%,.2f | Cupo disponible: $%,.2f%n",
+                        tarjeta.getSaldo(),
+                        tarjeta.getCupoDisponible());
                 return;
             }
 
             double monto = PersonFormValidation.validateDouble("Monto a retirar: ");
             cuentaServices.retirar(username, tipo, monto);
-            System.out.println("✅ Retiro exitoso.");
+
+            Cuenta cuentaActualizada = cuentaServices.obtenerCuenta(username, tipo);
+            System.out.printf("✅ Retiro exitoso de $%,.2f.%n", monto);
+            System.out.printf("Saldo actual de %s: $%,.2f%n", tipo, cuentaActualizada.getSaldo());
         } catch (Exception e) {
             System.out.println("❌ Error: " + e.getMessage());
         }
@@ -110,5 +126,83 @@ public class CuentaView {
         } else {
             System.out.println("ℹ️ No hay movimientos registrados.");
         }
+    }
+
+    public void transferirDinero(String username) {
+        try {
+            System.out.println("\n--- INTERFAZ DE TRANSFERENCIAS ---");
+            System.out.println("1. Entre mis cuentas");
+            System.out.println("2. A otro usuario");
+
+            int opcion = PersonFormValidation.validateInt("Seleccione tipo de transferencia: ");
+            TypoCuenta tipoOrigen = solicitarTipoCuenta("Seleccione la cuenta origen (débito)");
+            if (tipoOrigen == null) {
+                System.out.println("❌ Tipo de cuenta origen no válido.");
+                return;
+            }
+
+            double monto = PersonFormValidation.validateDouble("Monto a transferir: ");
+
+            if (opcion == 1) {
+                TypoCuenta tipoDestino = solicitarTipoCuenta("Seleccione la cuenta destino (crédito)");
+                if (tipoDestino == null) {
+                    System.out.println("❌ Tipo de cuenta destino no válido.");
+                    return;
+                }
+
+                cuentaServices.transferirEntrePropias(username, tipoOrigen, tipoDestino, monto);
+
+                Cuenta cuentaOrigen = cuentaServices.obtenerCuenta(username, tipoOrigen);
+                Cuenta cuentaDestino = cuentaServices.obtenerCuenta(username, tipoDestino);
+                System.out.printf("✅ Transferencia propia exitosa: $%,.2f de %s a %s.%n", monto, tipoOrigen, tipoDestino);
+                System.out.printf("Saldo origen: $%,.2f | Saldo destino: $%,.2f%n",
+                        cuentaOrigen.getSaldo(),
+                        cuentaDestino.getSaldo());
+                return;
+            }
+
+            if (opcion == 2) {
+                String cuentaDestino = PersonFormValidation.validateString("Número de cuenta destino: ");
+                cuentaServices.transferirATercero(username, tipoOrigen, cuentaDestino, monto);
+
+                Cuenta cuentaOrigen = cuentaServices.obtenerCuenta(username, tipoOrigen);
+                Cuenta destino = buscarCuentaPorNumero(cuentaDestino);
+                String propietarioDestino = (destino != null) ? destino.getPropietario() : "usuario destino";
+                double saldoDestino = (destino != null) ? destino.getSaldo() : 0;
+
+                System.out.printf("✅ Transferencia a tercero exitosa: $%,.2f a la cuenta %s (%s).%n",
+                        monto,
+                        cuentaDestino,
+                        propietarioDestino);
+                System.out.printf("Saldo origen: $%,.2f%n", cuentaOrigen.getSaldo());
+                if (destino != null) {
+                    System.out.printf("Saldo destino: $%,.2f%n", saldoDestino);
+                }
+                return;
+            }
+
+            System.out.println("❌ Opción no válida.");
+        } catch (Exception e) {
+            System.out.println("❌ Error: " + e.getMessage());
+        }
+    }
+
+    private TypoCuenta solicitarTipoCuenta(String mensaje) {
+        System.out.println(mensaje);
+        System.out.println("1. Cuenta de Ahorros");
+        System.out.println("2. Cuenta Corriente");
+        int opcion = PersonFormValidation.validateInt("Seleccione: ");
+        return switch (opcion) {
+            case 1 -> TypoCuenta.AHORROS;
+            case 2 -> TypoCuenta.CORRIENTE;
+            default -> null;
+        };
+    }
+
+    private Cuenta buscarCuentaPorNumero(String numeroCuenta) {
+        return cuentaServices.listarTodasLasCuentas().stream()
+                .filter(c -> c.getNumeroCuenta() != null && c.getNumeroCuenta().equalsIgnoreCase(numeroCuenta))
+                .findFirst()
+                .orElse(null);
     }
 }

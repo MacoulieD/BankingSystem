@@ -60,13 +60,9 @@ public class PersonServiceImpl implements PersonService {
         System.out.println("2. Cuenta Corriente");
         int tipoCuenta = PersonFormValidation.validateInt("Seleccione una opción: ");
 
-
+        TypoCuenta tipoSeleccionado = null;
         if (tipoCuenta == 1 || tipoCuenta == 2) {
-
-            cuentaService.crearCuenta(username, initialBalance, TypoCuenta.desdeId(tipoCuenta));
-
-            String mensaje = (tipoCuenta == 1) ? "Ahorros" : "Corriente";
-            System.out.println("✅ Solicitud de Cuenta de " + mensaje + " procesada.");
+            tipoSeleccionado = TypoCuenta.desdeId(tipoCuenta);
         } else {
             System.out.println("⚠️ Opción no válida. El perfil se creará sin cuenta activa.");
         }
@@ -75,7 +71,19 @@ public class PersonServiceImpl implements PersonService {
         Person newPerson = new Person(id, name, telephone, email, username, initialBalance, password);
         Person saved = personRepository.save(newPerson);
 
-        System.out.println("\n✅ ¡Registro de usuario y cuenta completado con éxito!");
+        System.out.println("\n✅ Usuario registrado correctamente: " + saved.getUsername());
+
+        if (tipoSeleccionado != null) {
+            try {
+                cuentaService.crearCuenta(username, initialBalance, tipoSeleccionado);
+                System.out.println("✅ Cuenta inicial creada: " + tipoSeleccionado + ".");
+            } catch (Exception e) {
+                System.out.println("⚠️ Usuario creado, pero no se pudo aperturar la cuenta inicial: " + e.getMessage());
+            }
+        } else {
+            System.out.println("ℹ️ Puedes aperturar tu primera cuenta desde el menú después de iniciar sesión.");
+        }
+
         return saved;
     }
 
