@@ -1,9 +1,8 @@
 package bankingsystem.view;
 
-import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.CuentaAhorros;
 import bankingsystem.services.CuentaAhorrosServices;
-import bankingsystem.utils.PersonFormValidation;
+import bankingsystem.utils.FormValidation;
 
 public class CuentaAhorrosView {
 
@@ -23,7 +22,7 @@ public class CuentaAhorrosView {
     }
 
     public void realizarConsignacion(String username) {
-        double monto = PersonFormValidation.validateDouble("Ingrese el monto a consignar: ");
+        double monto = FormValidation.validateDouble("Ingrese el monto a consignar: ");
         try {
             service.consignar(username, monto);
             System.out.println("✅ Consignación exitosa en cuenta de ahorros.");
@@ -33,7 +32,7 @@ public class CuentaAhorrosView {
     }
 
     public void realizarRetiro(String username) {
-        double monto = PersonFormValidation.validateDouble("Ingrese el monto a retirar: ");
+        double monto = FormValidation.validateDouble("Ingrese el monto a retirar: ");
         try {
             service.retirar(username, monto);
             System.out.println("✅ Retiro exitoso.");
