@@ -5,7 +5,7 @@ import bankingsystem.domain.TarjetaCredito;
 import bankingsystem.domain.enums.TypoCuenta;
 import bankingsystem.services.CuentaServices;
 import bankingsystem.services.TarjetaCreditoServices;
-import bankingsystem.utils.PersonFormValidation;
+import bankingsystem.utils.FormValidation;
 
 
 public class CuentaView {
@@ -57,8 +57,8 @@ public class CuentaView {
     public void realizarConsignacion(String username, TypoCuenta tipo) {
         try {
             if (tipo == TypoCuenta.TARJETA_CREDITO) {
-                double montoCompra = PersonFormValidation.validateDouble("Valor de la compra: ");
-                int cuotas = PersonFormValidation.validateInt("Número de cuotas: ");
+                double montoCompra = FormValidation.validateDouble("Valor de la compra: ");
+                int cuotas = FormValidation.validateInt("Número de cuotas: ");
                 tarjetaCreditoServices.realizarCompra(username, montoCompra, cuotas);
 
                 TarjetaCredito tarjeta = tarjetaCreditoServices.buscarTarjeta(username);
@@ -73,7 +73,7 @@ public class CuentaView {
                 return;
             }
 
-            double monto = PersonFormValidation.validateDouble("Monto a consignar: ");
+            double monto = FormValidation.validateDouble("Monto a consignar: ");
 
 
             cuentaServices.consignar(username, tipo, monto);
@@ -93,7 +93,7 @@ public class CuentaView {
     public void realizarRetiro(String username, TypoCuenta tipo) {
         try {
             if (tipo == TypoCuenta.TARJETA_CREDITO) {
-                double montoPago = PersonFormValidation.validateDouble("Monto a pagar de la deuda: ");
+                double montoPago = FormValidation.validateDouble("Monto a pagar de la deuda: ");
                 tarjetaCreditoServices.pagarCuota(username, montoPago);
 
                 TarjetaCredito tarjeta = tarjetaCreditoServices.buscarTarjeta(username);
@@ -104,7 +104,7 @@ public class CuentaView {
                 return;
             }
 
-            double monto = PersonFormValidation.validateDouble("Monto a retirar: ");
+            double monto = FormValidation.validateDouble("Monto a retirar: ");
             cuentaServices.retirar(username, tipo, monto);
 
             Cuenta cuentaActualizada = cuentaServices.obtenerCuenta(username, tipo);
@@ -134,14 +134,14 @@ public class CuentaView {
             System.out.println("1. Entre mis cuentas");
             System.out.println("2. A otro usuario");
 
-            int opcion = PersonFormValidation.validateInt("Seleccione tipo de transferencia: ");
+            int opcion = FormValidation.validateInt("Seleccione tipo de transferencia: ");
             TypoCuenta tipoOrigen = solicitarTipoCuenta("Seleccione la cuenta origen (débito)");
             if (tipoOrigen == null) {
                 System.out.println("❌ Tipo de cuenta origen no válido.");
                 return;
             }
 
-            double monto = PersonFormValidation.validateDouble("Monto a transferir: ");
+            double monto = FormValidation.validateDouble("Monto a transferir: ");
 
             if (opcion == 1) {
                 TypoCuenta tipoDestino = solicitarTipoCuenta("Seleccione la cuenta destino (crédito)");
@@ -162,7 +162,7 @@ public class CuentaView {
             }
 
             if (opcion == 2) {
-                String cuentaDestino = PersonFormValidation.validateString("Número de cuenta destino: ");
+                String cuentaDestino = FormValidation.validateString("Número de cuenta destino: ");
                 cuentaServices.transferirATercero(username, tipoOrigen, cuentaDestino, monto);
 
                 Cuenta cuentaOrigen = cuentaServices.obtenerCuenta(username, tipoOrigen);
@@ -191,7 +191,7 @@ public class CuentaView {
         System.out.println(mensaje);
         System.out.println("1. Cuenta de Ahorros");
         System.out.println("2. Cuenta Corriente");
-        int opcion = PersonFormValidation.validateInt("Seleccione: ");
+        int opcion = FormValidation.validateInt("Seleccione: ");
         return switch (opcion) {
             case 1 -> TypoCuenta.AHORROS;
             case 2 -> TypoCuenta.CORRIENTE;

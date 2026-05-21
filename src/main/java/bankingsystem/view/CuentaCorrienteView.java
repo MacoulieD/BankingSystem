@@ -2,7 +2,7 @@ package bankingsystem.view;
 
 import bankingsystem.domain.CuentaCorriente;
 import bankingsystem.services.CuentaCorrienteServices;
-import bankingsystem.utils.CuentaCorrienteFromValidation;
+import bankingsystem.utils.FormValidation;
 
 
 public class CuentaCorrienteView {
@@ -17,7 +17,7 @@ public class CuentaCorrienteView {
     public void realizarRetiro(String username) {
         try {
             System.out.println("\n--- RETIRO CUENTA CORRIENTE ---");
-            double monto = CuentaCorrienteFromValidation.validateMonto(
+            double monto = FormValidation.validateMonto(
                     "Ingrese el monto a retirar (se aplicará sobregiro si es necesario): "
             );
 
