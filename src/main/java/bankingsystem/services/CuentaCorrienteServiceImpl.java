@@ -4,8 +4,8 @@ import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.CuentaCorriente;
 import bankingsystem.domain.Movimiento;
 import bankingsystem.domain.enums.TipoMovimiento;
-import bankingsystem.repository.CuentaCorrienteRepository;
-import bankingsystem.repository.MovimientoRepository;
+import bankingsystem.Persistence.repository.CuentaCorrienteRepository;
+import bankingsystem.Persistence.repository.MovimientoRepository;
 
 
 public class CuentaCorrienteServiceImpl implements CuentaCorrienteServices {
