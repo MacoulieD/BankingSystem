@@ -2,7 +2,7 @@ package bankingsystem.view;
 
 import bankingsystem.domain.Person;
 import bankingsystem.services.PersonService;
-import bankingsystem.utils.PersonFormValidation;
+import bankingsystem.utils.FormValidation;
 
 public class PersonView {
     private final PersonService personService;
@@ -15,7 +15,7 @@ public class PersonView {
     }
 
     public void updatePerson(){
-        personService.updatePerson(PersonFormValidation.validateInt("Ingrese el ID"));
+        personService.updatePerson(FormValidation.validateInt("Ingrese el ID"));
     }
 
     public Person updateLoggedPerson(String username){
@@ -23,7 +23,7 @@ public class PersonView {
     }
 
         public void deletePerson(){
-            personService.deletePerson(PersonFormValidation.validateInt("Ingrese el id de la persona a eliminar"));
+            personService.deletePerson(FormValidation.validateInt("Ingrese el id de la persona a eliminar"));
         }
 
 }
