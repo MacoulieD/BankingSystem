@@ -2,7 +2,7 @@ package bankingsystem.services;
 
 import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.CuentaCorriente;
-import bankingsystem.repository.CuentaCorrienteRepository;
+import bankingsystem.Persistence.repository.CuentaCorrienteRepository;
 
 
 public class CuentaCorrienteServiceImpl implements CuentaCorrienteServices {

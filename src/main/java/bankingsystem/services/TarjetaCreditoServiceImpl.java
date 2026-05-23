@@ -2,7 +2,7 @@ package bankingsystem.services;
 
 
 import bankingsystem.domain.TarjetaCredito;
-import bankingsystem.repository.TarjetaCreditoRepository;
+import bankingsystem.Persistence.repository.TarjetaCreditoRepository;
 
 public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
 

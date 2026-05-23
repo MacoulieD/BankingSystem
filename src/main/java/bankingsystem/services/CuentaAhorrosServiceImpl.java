@@ -2,7 +2,7 @@ package bankingsystem.services;
 
 import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.CuentaAhorros;
-import bankingsystem.repository.CuentaAhorrosRepository;
+import bankingsystem.Persistence.repository.CuentaAhorrosRepository;
 
 
 public class CuentaAhorrosServiceImpl implements CuentaAhorrosServices {

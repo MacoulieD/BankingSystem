@@ -1,4 +1,4 @@
-package bankingsystem.repository;
+package bankingsystem.Persistence.repository;
 
 public class MovimientoRepository {
 
