@@ -2,15 +2,20 @@ package bankingsystem.services;
 
 import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.CuentaCorriente;
+import bankingsystem.domain.Movimiento;
+import bankingsystem.domain.enums.TipoMovimiento;
 import bankingsystem.repository.CuentaCorrienteRepository;
+import bankingsystem.repository.MovimientoRepository;
 
 
 public class CuentaCorrienteServiceImpl implements CuentaCorrienteServices {
 
     private final CuentaCorrienteRepository repo;
+    private final MovimientoRepository movimientoRepo;
 
-    public CuentaCorrienteServiceImpl(CuentaCorrienteRepository repo) {
+    public CuentaCorrienteServiceImpl(CuentaCorrienteRepository repo, MovimientoRepository movimientoRepo) {
         this.repo = repo;
+        this.movimientoRepo = movimientoRepo;
     }
 
 
@@ -50,8 +55,9 @@ public class CuentaCorrienteServiceImpl implements CuentaCorrienteServices {
         //No esta aplicando el retiro correctamente, ya que no esta tomando en cuenta el limite de sobre giro arreglar
         cuenta.setSaldo(cuenta.getSaldo() - monto);
 
-        String log = String.format("Retiro: -$%.2f | Nuevo saldo: $%.2f", monto, cuenta.getSaldo());
-        cuenta.getMovimientos().add(log);
+        Movimiento movRC = new Movimiento(cuenta.getMovimientos().size() + 1, TipoMovimiento.RETIRO, monto, cuenta.getSaldo(), String.format("Retiro: -$%.2f | Nuevo saldo: $%.2f", monto, cuenta.getSaldo()));
+        cuenta.getMovimientos().add(movRC);
+        movimientoRepo.save(movRC);
     }
 
     @Override
@@ -66,7 +72,9 @@ public class CuentaCorrienteServiceImpl implements CuentaCorrienteServices {
 
         if (monto > 0) {
             cuenta.setSaldo(cuenta.getSaldo() + monto);
-            cuenta.getMovimientos().add(String.format("Consignación: +$%.2f", monto));
+            Movimiento movCC = new Movimiento(cuenta.getMovimientos().size() + 1, TipoMovimiento.CONSIGNACION, monto, cuenta.getSaldo(), String.format("Consignación: +$%.2f", monto));
+            cuenta.getMovimientos().add(movCC);
+            movimientoRepo.save(movCC);
         }
     }
     @Override

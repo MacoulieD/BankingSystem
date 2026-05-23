@@ -1,5 +1,10 @@
 package bankingsystem.domain.enums;
 
 public enum TipoMovimiento {
-    //Realizar la logica del lo tipos de movimiento
+    CONSIGNACION,
+    RETIRO,
+    TRANSFERENCIA_OUT,
+    TRANSFERENCIA_IN,
+    COMPRA_TC,
+    PAGO_TC
 }

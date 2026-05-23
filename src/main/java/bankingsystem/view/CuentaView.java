@@ -1,6 +1,7 @@
 package bankingsystem.view;
 
 import bankingsystem.domain.Cuenta;
+import bankingsystem.domain.Movimiento;
 import bankingsystem.domain.TarjetaCredito;
 import bankingsystem.domain.enums.TypoCuenta;
 import bankingsystem.services.CuentaServices;
@@ -120,7 +121,7 @@ public class CuentaView {
         Cuenta cuenta = cuentaServices.obtenerCuenta(username, tipo);
         if (cuenta != null && !cuenta.getMovimientos().isEmpty()) {
             System.out.println("\n--- HISTORIAL DE MOVIMIENTOS ---");
-            for (String mov : cuenta.getMovimientos()) {
+            for (Movimiento mov : cuenta.getMovimientos()) {
                 System.out.println("- " + mov);
             }
         } else {
