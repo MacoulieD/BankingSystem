@@ -1,4 +1,4 @@
-package bankingsystem.repository;
+package bankingsystem.Persistence.repository;
 
 import bankingsystem.domain.TarjetaCredito;
 import java.util.ArrayList;

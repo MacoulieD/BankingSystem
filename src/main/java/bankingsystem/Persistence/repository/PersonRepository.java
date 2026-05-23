@@ -1,9 +1,8 @@
-package bankingsystem.repository;
+package bankingsystem.Persistence.repository;
 
 import bankingsystem.domain.Person;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class PersonRepository {
     // Lista en memoria para simular la base de datos

@@ -1,9 +1,12 @@
 package bankingsystem.services;
 
+import bankingsystem.Persistence.repository.CuentaAhorrosRepository;
+import bankingsystem.Persistence.repository.CuentaCorrienteRepository;
+import bankingsystem.Persistence.repository.CuentaRepository;
+import bankingsystem.Persistence.repository.TarjetaCreditoRepository;
 import bankingsystem.domain.*;
 import bankingsystem.domain.enums.TipoMovimiento;
 import bankingsystem.domain.enums.TypoCuenta;
-import bankingsystem.repository.*;
 
 import java.util.List;
 

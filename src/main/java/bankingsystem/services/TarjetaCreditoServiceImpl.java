@@ -1,11 +1,12 @@
 package bankingsystem.services;
 
 
+import bankingsystem.Persistence.repository.TarjetaCreditoRepository;
 import bankingsystem.domain.Movimiento;
 import bankingsystem.domain.TarjetaCredito;
 import bankingsystem.domain.enums.TipoMovimiento;
-import bankingsystem.repository.MovimientoRepository;
-import bankingsystem.repository.TarjetaCreditoRepository;
+import bankingsystem.Persistence.repository.MovimientoRepository;
+
 
 public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
 

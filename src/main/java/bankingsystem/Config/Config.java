@@ -1,6 +1,6 @@
 package bankingsystem.Config;
 
-import bankingsystem.repository.*;
+import bankingsystem.Persistence.repository.*;
 import bankingsystem.services.*;
 import bankingsystem.view.CuentaView;
 import bankingsystem.view.LoginView;

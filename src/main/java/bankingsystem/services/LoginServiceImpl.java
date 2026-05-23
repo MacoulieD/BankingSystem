@@ -1,7 +1,7 @@
 package bankingsystem.services;
 
 import bankingsystem.domain.Person;
-import bankingsystem.repository.PersonRepository;
+import bankingsystem.Persistence.repository.PersonRepository;
 import java.time.LocalDateTime;
 
 public class LoginServiceImpl implements LoginService {
