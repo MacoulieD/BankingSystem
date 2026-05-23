@@ -1,11 +1,11 @@
 package bankingsystem.services;
 
+import bankingsystem.Persistence.repository.CuentaAhorrosRepository;
+import bankingsystem.Persistence.repository.MovimientoRepository;
 import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.CuentaAhorros;
 import bankingsystem.domain.Movimiento;
 import bankingsystem.domain.enums.TipoMovimiento;
-import bankingsystem.Persistence.repository.CuentaAhorrosRepository;
-import bankingsystem.Persistence.repository.MovimientoRepository;
 
 
 public class CuentaAhorrosServiceImpl implements CuentaAhorrosServices {
