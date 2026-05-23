@@ -2,15 +2,20 @@ package bankingsystem.services;
 
 import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.CuentaAhorros;
-import bankingsystem.Persistence.repository.CuentaAhorrosRepository;
+import bankingsystem.domain.Movimiento;
+import bankingsystem.domain.enums.TipoMovimiento;
+import bankingsystem.repository.CuentaAhorrosRepository;
+import bankingsystem.repository.MovimientoRepository;
 
 
 public class CuentaAhorrosServiceImpl implements CuentaAhorrosServices {
 
     private final CuentaAhorrosRepository cuentaRepository;
+    private final MovimientoRepository movimientoRepo;
 
-    public CuentaAhorrosServiceImpl(CuentaAhorrosRepository cuentaRepository) {
+    public CuentaAhorrosServiceImpl(CuentaAhorrosRepository cuentaRepository, MovimientoRepository movimientoRepo) {
         this.cuentaRepository = cuentaRepository;
+        this.movimientoRepo = movimientoRepo;
     }
     @Override
     public void crearCuenta(String username, double saldoInicial) {
@@ -41,7 +46,9 @@ public class CuentaAhorrosServiceImpl implements CuentaAhorrosServices {
 
         if (monto > 0) {
             cuenta.setSaldo(cuenta.getSaldo() + monto);
-            cuenta.getMovimientos().add(String.format("Consignación: +$%.2f", monto));
+            Movimiento movCA = new Movimiento(cuenta.getMovimientos().size() + 1, TipoMovimiento.CONSIGNACION, monto, cuenta.getSaldo(), String.format("Consignación: +$%.2f", monto));
+            cuenta.getMovimientos().add(movCA);
+            movimientoRepo.save(movCA);
         } else {
             throw new RuntimeException("❌ El monto a consignar debe ser positivo.");
         }
@@ -66,7 +73,9 @@ public class CuentaAhorrosServiceImpl implements CuentaAhorrosServices {
         }
 
         cuenta.setSaldo(cuenta.getSaldo() - monto);
-        cuenta.getMovimientos().add(String.format("Retiro: -$%.2f", monto));
+        Movimiento movRA = new Movimiento(cuenta.getMovimientos().size() + 1, TipoMovimiento.RETIRO, monto, cuenta.getSaldo(), String.format("Retiro: -$%.2f", monto));
+        cuenta.getMovimientos().add(movRA);
+        movimientoRepo.save(movRA);
     }
 
     @Override

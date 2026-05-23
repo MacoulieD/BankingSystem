@@ -43,12 +43,12 @@ public class CuentaCorriente extends Cuenta {
     }
 
     @Override
-    public List<String> getMovimientos() {
+    public List<Movimiento> getMovimientos() {
         return this.movimientos;
     }
 
     @Override
-    public void setMovimientos(List<String> movimientos) {
+    public void setMovimientos(List<Movimiento> movimientos) {
         this.movimientos = movimientos;
     }
 

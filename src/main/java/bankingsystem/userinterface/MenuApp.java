@@ -5,8 +5,8 @@ import bankingsystem.domain.Person;
 import bankingsystem.domain.TarjetaCredito;
 import bankingsystem.domain.enums.TypoCuenta;
 import bankingsystem.services.CuentaServices;
+import bankingsystem.utils.FormValidation;
 import bankingsystem.view.*;
-import bankingsystem.utils.PersonFormValidation;
 
 import java.util.List;
 
@@ -35,7 +35,7 @@ public class MenuApp {
             System.out.println("2. Registrarme");
             System.out.println("0. Salir");
 
-            option = PersonFormValidation.validateInt("Seleccione una opción: ");
+            option = FormValidation.validateInt("Seleccione una opción: ");
 
             switch (option) {
                 case 1 -> handleLogin();
@@ -55,7 +55,7 @@ public class MenuApp {
             System.out.println("⚠️ Inicio de sesión fallido. Verifica tus credenciales o regístrate.");
             System.out.println("1. Registrarme");
             System.out.println("2. Volver al Menú Principal");
-            int option = PersonFormValidation.validateInt("Seleccione: ");
+            int option = FormValidation.validateInt("Seleccione: ");
             if (option == 1) personView.createPerson();
         }
     }
@@ -78,7 +78,7 @@ public class MenuApp {
             System.out.println("10. Editar Mis Datos");
             System.out.println("0. Cerrar Sesión");
 
-            userOption = PersonFormValidation.validateInt("Seleccione operación: ");
+            userOption = FormValidation.validateInt("Seleccione operación: ");
 
             if (userOption >= 1 && userOption <= 4) {
                 showCuentasSubMenu(user, userOption);
@@ -123,7 +123,7 @@ public class MenuApp {
             System.out.println("No tienes cuentas base. Elige cuál deseas aperturar:");
             System.out.println("1. Cuenta de Ahorros");
             System.out.println("2. Cuenta Corriente");
-            int opcion = PersonFormValidation.validateInt("Seleccione: ");
+            int opcion = FormValidation.validateInt("Seleccione: ");
             tipoApertura = (opcion == 1) ? TypoCuenta.AHORROS : (opcion == 2) ? TypoCuenta.CORRIENTE : null;
             if (tipoApertura == null) {
                 System.out.println("❌ Opción no válida.");
@@ -131,7 +131,7 @@ public class MenuApp {
             }
         }
 
-        double saldoInicial = PersonFormValidation.validateDouble("Ingrese saldo inicial para la nueva cuenta: ");
+        double saldoInicial = FormValidation.validateDouble("Ingrese saldo inicial para la nueva cuenta: ");
 
         try {
             this.cuentaService.crearCuenta(username, saldoInicial, tipoApertura);
@@ -167,7 +167,7 @@ public class MenuApp {
         Cuenta tarjeta = this.cuentaService.obtenerCuentaPorTipo(username, TypoCuenta.TARJETA_CREDITO);
         if (tarjeta == null) {
             System.out.println("⚠️ Aún no tienes tarjeta de crédito.");
-            int abrir = PersonFormValidation.validateInt("Digite 1 para aperturarla o 0 para volver: ");
+            int abrir = FormValidation.validateInt("Digite 1 para aperturarla o 0 para volver: ");
             if (abrir == 1) {
                 aperturarTarjetaCredito(username);
             }
@@ -186,7 +186,7 @@ public class MenuApp {
             System.out.println("4. Ver Movimientos");
             System.out.println("0. Volver");
 
-            option = PersonFormValidation.validateInt("Seleccione: ");
+            option = FormValidation.validateInt("Seleccione: ");
             switch (option) {
                 case 1 -> cuentaView.consultarEstadoTarjeta(username);
                 case 2 -> cuentaView.realizarConsignacion(username, TypoCuenta.TARJETA_CREDITO);
@@ -226,7 +226,7 @@ public class MenuApp {
         System.out.println("1. Cuenta de Ahorros");
         System.out.println("2. Cuenta Corriente");
 
-        int cuentaOption = PersonFormValidation.validateInt("Seleccione: ");
+        int cuentaOption = FormValidation.validateInt("Seleccione: ");
 
         TypoCuenta tipo = switch (cuentaOption) {
             case 1 -> TypoCuenta.AHORROS;

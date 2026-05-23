@@ -1,6 +1,18 @@
 package bankingsystem.Persistence.repository;
 
+import bankingsystem.domain.Movimiento;
+import java.util.ArrayList;
+import java.util.List;
+
 public class MovimientoRepository {
 
-    //Agregar la logica de movimientos
+    private final List<Movimiento> movimientos = new ArrayList<>();
+
+    public void save(Movimiento movimiento) {
+        movimientos.add(movimiento);
+    }
+
+    public List<Movimiento> findAll() {
+        return movimientos;
+    }
 }

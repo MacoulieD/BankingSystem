@@ -2,8 +2,8 @@ package bankingsystem.view;
 
 import bankingsystem.domain.Person;
 import bankingsystem.services.LoginService;
-import bankingsystem.Persistence.repository.PersonRepository;
-import bankingsystem.utils.PersonFormValidation;
+import bankingsystem.repository.PersonRepository;
+import bankingsystem.utils.FormValidation;
 
 public class LoginView {
     private final LoginService loginService;
@@ -17,7 +17,7 @@ public class LoginView {
 
     public Person executeLogin() {
         System.out.println("\n--- ACCESO AL SISTEMA ---");
-        String username = PersonFormValidation.validateString("Usuario: ");
+        String username = FormValidation.validateString("Usuario: ");
 
 
         if (!doesUserExist(username)) {
@@ -33,7 +33,7 @@ public class LoginView {
                 return null;
             }
 
-            String pass = PersonFormValidation.validateString("Contraseña: ");
+            String pass = FormValidation.validateString("Contraseña: ");
             Person loggedInUser = loginService.login(username, pass);
 
             if (loggedInUser != null) {

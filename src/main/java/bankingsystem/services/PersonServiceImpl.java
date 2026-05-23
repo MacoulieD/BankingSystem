@@ -3,8 +3,8 @@ package bankingsystem.services;
 import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.Person;
 import bankingsystem.domain.enums.TypoCuenta;
-import bankingsystem.Persistence.repository.PersonRepository;
-import bankingsystem.utils.PersonFormValidation;
+import bankingsystem.repository.PersonRepository;
+import bankingsystem.utils.FormValidation;
 
 
 public class PersonServiceImpl implements PersonService {
@@ -23,19 +23,19 @@ public class PersonServiceImpl implements PersonService {
         System.out.println("\n--- FORMULARIO DE REGISTRO ---");
 
 
-        int id, telephone;
-        String name, email, username, password;
+        int id;
+        String name,telephone ,email, username, password;
         double initialBalance;
 
 
-        id = PersonFormValidation.validateInt("Ingrese su identificación: ");
-        name = PersonFormValidation.validateStringName("Ingrese su nombre completo: ");
-        telephone = PersonFormValidation.validateInt("Ingrese su celular: ");
-        email = PersonFormValidation.validateString("Ingrese su email: ");
+        id = FormValidation.validateInt("Ingrese su identificación: ");
+        name = FormValidation.validateStringName("Ingrese su nombre completo: ");
+        telephone = FormValidation.validateintPhone("Ingrese su número de teléfono: ");
+        email = FormValidation.validateString("Ingrese su email: ");
 
 
         while (true) {
-            username = PersonFormValidation.validateString("Ingrese su nombre de usuario: ");
+            username = FormValidation.validateString("Ingrese su nombre de usuario: ");
             if (personRepository.existsByUsername(username)) {
                 System.out.println("❌ El usuario ya existe. Intente con uno diferente.");
             } else {
@@ -45,21 +45,21 @@ public class PersonServiceImpl implements PersonService {
 
 
         while (true) {
-            password = PersonFormValidation.validateString("Ingrese su contraseña: ");
-            String repeatPassword = PersonFormValidation.validateString("Confirme su contraseña: ");
-            if (PersonFormValidation.validatePassword(password, repeatPassword)) {
+            password = FormValidation.validateString("Ingrese su contraseña: ");
+            String repeatPassword = FormValidation.validateString("Confirme su contraseña: ");
+            if (FormValidation.validatePassword(password, repeatPassword)) {
                 break;
             }
         }
 
 
-        initialBalance = PersonFormValidation.validateDouble("Ingrese el saldo inicial para la apertura: ");
+        initialBalance = FormValidation.validateDouble("Ingrese el saldo inicial para la apertura: ");
 
 
         System.out.println("\n¿Qué tipo de cuenta desea abrir?");
         System.out.println("1. Cuenta de Ahorros");
         System.out.println("2. Cuenta Corriente");
-        int tipoCuenta = PersonFormValidation.validateInt("Seleccione una opción: ");
+        int tipoCuenta = FormValidation.validateInt("Seleccione una opción: ");
 
         TypoCuenta tipoSeleccionado = null;
         if (tipoCuenta == 1 || tipoCuenta == 2) {
@@ -131,14 +131,14 @@ public class PersonServiceImpl implements PersonService {
             System.out.println("6. Contraseña");
             System.out.println("0. Finalizar edición");
 
-            opcion = PersonFormValidation.validateInt("Seleccione una opción: ");
+            opcion = FormValidation.validateInt("Seleccione una opción: ");
 
             switch (opcion) {
                 case 1 -> {
                     int valorAnterior = person.getId();
                     int nuevoId;
                     while (true) {
-                        nuevoId = PersonFormValidation.validateInt("Nueva identificación: ");
+                        nuevoId = FormValidation.validateInt("Nueva identificación: ");
                         Person existente = personRepository.findById(nuevoId);
                         if (existente != null && existente != person) {
                             System.out.println("❌ La identificación ya está registrada por otro usuario.");
@@ -153,15 +153,15 @@ public class PersonServiceImpl implements PersonService {
                 }
                 case 2 -> {
                     String valorAnterior = person.getName();
-                    String nuevoNombre = PersonFormValidation.validateStringName("Nuevo nombre completo: ");
+                    String nuevoNombre = FormValidation.validateStringName("Nuevo nombre completo: ");
                     person.setName(nuevoNombre);
                     huboCambios = true;
                     ultimoDatoActualizado = "Nombre completo";
                     System.out.println("✅ Nombre actualizado: " + valorAnterior + " -> " + nuevoNombre + ".");
                 }
                 case 3 -> {
-                    int valorAnterior = person.getTelephone();
-                    int nuevoTelefono = PersonFormValidation.validateInt("Nuevo celular: ");
+                    String valorAnterior = person.getTelephone();
+                    String nuevoTelefono = FormValidation.validateintPhone("Nuevo celular: ");
                     person.setTelephone(nuevoTelefono);
                     huboCambios = true;
                     ultimoDatoActualizado = "Celular";
@@ -169,7 +169,7 @@ public class PersonServiceImpl implements PersonService {
                 }
                 case 4 -> {
                     String valorAnterior = person.getEmail();
-                    String nuevoEmail = PersonFormValidation.validateString("Nuevo email: ");
+                    String nuevoEmail = FormValidation.validateString("Nuevo email: ");
                     person.setEmail(nuevoEmail);
                     huboCambios = true;
                     ultimoDatoActualizado = "Email";
@@ -179,7 +179,7 @@ public class PersonServiceImpl implements PersonService {
                     String usernameAnterior = person.getUsername();
                     String nuevoUsername;
                     while (true) {
-                        nuevoUsername = PersonFormValidation.validateString("Nuevo nombre de usuario: ");
+                        nuevoUsername = FormValidation.validateString("Nuevo nombre de usuario: ");
                         Person existente = personRepository.findByUsername(nuevoUsername);
                         if (existente != null && existente != person) {
                             System.out.println("❌ El nombre de usuario ya existe. Intente con uno diferente.");
@@ -198,9 +198,9 @@ public class PersonServiceImpl implements PersonService {
                 case 6 -> {
                     String nuevaPassword;
                     while (true) {
-                        nuevaPassword = PersonFormValidation.validateString("Nueva contraseña: ");
-                        String repetirPassword = PersonFormValidation.validateString("Confirme la nueva contraseña: ");
-                        if (PersonFormValidation.validatePassword(nuevaPassword, repetirPassword)) {
+                        nuevaPassword = FormValidation.validateString("Nueva contraseña: ");
+                        String repetirPassword = FormValidation.validateString("Confirme la nueva contraseña: ");
+                        if (FormValidation.validatePassword(nuevaPassword, repetirPassword)) {
                             break;
                         }
                     }

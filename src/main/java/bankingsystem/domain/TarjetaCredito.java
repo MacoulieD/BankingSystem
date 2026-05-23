@@ -57,6 +57,6 @@ public class TarjetaCredito extends Cuenta {
         }
     }
     @Override
-    public void setMovimientos(List<String> movimientos) {
+    public void setMovimientos(List<Movimiento> movimientos) {
     }
 }

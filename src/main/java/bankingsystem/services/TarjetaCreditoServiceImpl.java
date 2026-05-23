@@ -1,15 +1,21 @@
 package bankingsystem.services;
 
 
-import bankingsystem.domain.TarjetaCredito;
 import bankingsystem.Persistence.repository.TarjetaCreditoRepository;
+import bankingsystem.domain.Movimiento;
+import bankingsystem.domain.TarjetaCredito;
+import bankingsystem.domain.enums.TipoMovimiento;
+import bankingsystem.Persistence.repository.MovimientoRepository;
+
 
 public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
 
     private final TarjetaCreditoRepository tarjetaRepo;
+    private final MovimientoRepository movimientoRepo;
 
-    public TarjetaCreditoServiceImpl(TarjetaCreditoRepository tarjetaRepo) {
+    public TarjetaCreditoServiceImpl(TarjetaCreditoRepository tarjetaRepo, MovimientoRepository movimientoRepo) {
         this.tarjetaRepo = tarjetaRepo;
+        this.movimientoRepo = movimientoRepo;
     }
 
     @Override
@@ -43,8 +49,9 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
         tc.setSaldo(tc.getSaldo() + monto);
 
 
-        tc.getMovimientos().add(String.format("Compra: +$%,.2f (%d cuotas de $%,.2f - %s)",
-                monto, cuotas, valorCuota, obs));
+        Movimiento movCompra = new Movimiento(tc.getMovimientos().size() + 1, TipoMovimiento.COMPRA_TC, monto, tc.getSaldo(), String.format("Compra: +$%,.2f (%d cuotas de $%,.2f - %s)", monto, cuotas, valorCuota, obs));
+        tc.getMovimientos().add(movCompra);
+        movimientoRepo.save(movCompra);
     }
 
     @Override
@@ -69,7 +76,9 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
 
 
         tc.setSaldo(tc.getSaldo() - monto);
-        tc.getMovimientos().add(String.format("Pago realizado: -$%,.2f", monto));
+        Movimiento movPago = new Movimiento(tc.getMovimientos().size() + 1, TipoMovimiento.PAGO_TC, monto, tc.getSaldo(), String.format("Pago realizado: -$%,.2f", monto));
+        tc.getMovimientos().add(movPago);
+        movimientoRepo.save(movPago);
     }
 
     @Override

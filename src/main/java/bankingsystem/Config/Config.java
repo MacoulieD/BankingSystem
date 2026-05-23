@@ -16,19 +16,21 @@ public class Config {
         CuentaAhorrosRepository ahorrosRepo = new CuentaAhorrosRepository();
         CuentaCorrienteRepository corrienteRepo = new CuentaCorrienteRepository();
         TarjetaCreditoRepository tarjetaRepo = new TarjetaCreditoRepository();
+        MovimientoRepository movimientoRepo = new MovimientoRepository();
 
         // 2. SERVICIOS
         CuentaServices cuentaService = new CuentaServicesImpl(
                 cuentaGeneralRepo,
                 ahorrosRepo,
                 corrienteRepo,
-                tarjetaRepo
+                tarjetaRepo,
+                movimientoRepo
         );
 
         PersonService personService = new PersonServiceImpl(personRepo, cuentaService);
 
         LoginService loginService = new LoginServiceImpl(personRepo);
-        TarjetaCreditoServices tarjetaService = new TarjetaCreditoServiceImpl(tarjetaRepo);
+        TarjetaCreditoServices tarjetaService = new TarjetaCreditoServiceImpl(tarjetaRepo, movimientoRepo);
 
         PersonView personView = new PersonView(personService);
         LoginView loginView = new LoginView(loginService, personRepo);
