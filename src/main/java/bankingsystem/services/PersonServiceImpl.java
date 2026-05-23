@@ -3,7 +3,7 @@ package bankingsystem.services;
 import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.Person;
 import bankingsystem.domain.enums.TypoCuenta;
-import bankingsystem.repository.PersonRepository;
+import bankingsystem.Persistence.repository.PersonRepository;
 import bankingsystem.utils.FormValidation;
 
 

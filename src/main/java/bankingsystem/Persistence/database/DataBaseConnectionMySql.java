@@ -3,9 +3,9 @@ package bankingsystem.Persistence.database;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-
+// Clase para manejar la conexión a la base de datos MySQL utilizando el patrón Singleton
 public class DataBaseConnectionMySql {
-
+// Instancia única de la clase
     private static DataBaseConnectionMySql instance;
     private final Connection connection;
 

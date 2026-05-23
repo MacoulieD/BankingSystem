@@ -8,7 +8,6 @@ import bankingsystem.domain.Movimiento;
 import bankingsystem.domain.enums.TipoMovimiento;
 
 
-
 public class CuentaAhorrosServiceImpl implements CuentaAhorrosServices {
 
     private final CuentaAhorrosRepository cuentaRepository;
