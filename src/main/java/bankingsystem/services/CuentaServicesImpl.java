@@ -1,7 +1,7 @@
 package bankingsystem.services;
 
 import bankingsystem.domain.*;
-
+import bankingsystem.domain.enums.TipoMovimiento;
 import bankingsystem.domain.enums.TypoCuenta;
 import bankingsystem.repository.*;
 
@@ -14,15 +14,18 @@ public class CuentaServicesImpl implements CuentaServices {
     private final CuentaAhorrosRepository ahorrosRepo;
     private final CuentaCorrienteRepository corrienteRepo;
     private final TarjetaCreditoRepository tarjetaRepo;
+    private final MovimientoRepository movimientoRepo;
 
     public CuentaServicesImpl(CuentaRepository repository,
                               CuentaAhorrosRepository ahorrosRepo,
                               CuentaCorrienteRepository corrienteRepo,
-                              TarjetaCreditoRepository tarjetaRepo) { // <-- AGREGA ESTO AQUÍ
+                              TarjetaCreditoRepository tarjetaRepo,
+                              MovimientoRepository movimientoRepo) {
         this.repository = repository;
         this.ahorrosRepo = ahorrosRepo;
         this.corrienteRepo = corrienteRepo;
-        this.tarjetaRepo = tarjetaRepo; // Ahora sí funcionará
+        this.tarjetaRepo = tarjetaRepo;
+        this.movimientoRepo = movimientoRepo;
     }
 
     @Override
@@ -82,7 +85,9 @@ public class CuentaServicesImpl implements CuentaServices {
             throw new RuntimeException("El monto a consignar debe ser mayor a cero.");
         }
         c.setSaldo(c.getSaldo() + monto);
-        c.getMovimientos().add("Consignación: +$" + monto);
+        Movimiento movC = new Movimiento(c.getMovimientos().size() + 1, TipoMovimiento.CONSIGNACION, monto, c.getSaldo(), String.format("Consignación: +$%,.2f", monto));
+        c.getMovimientos().add(movC);
+        movimientoRepo.save(movC);
     }
 
     @Override
@@ -98,7 +103,9 @@ public class CuentaServicesImpl implements CuentaServices {
             throw new RuntimeException("Saldo insuficiente para realizar el retiro.");
         }
         c.setSaldo(c.getSaldo() - monto);
-        c.getMovimientos().add("Retiro: -$" + monto);
+        Movimiento movR = new Movimiento(c.getMovimientos().size() + 1, TipoMovimiento.RETIRO, monto, c.getSaldo(), String.format("Retiro: -$%,.2f", monto));
+        c.getMovimientos().add(movR);
+        movimientoRepo.save(movR);
     }
 
     @Override
@@ -155,19 +162,16 @@ public class CuentaServicesImpl implements CuentaServices {
         origen.setSaldo(origen.getSaldo() - monto);
         destino.setSaldo(destino.getSaldo() + monto);
 
-        String debito = String.format("%s enviada a %s (%s): -$%,.2f",
-                concepto,
-                destino.getNumeroCuenta(),
-                destino.getPropietario(),
-                monto);
-        String credito = String.format("%s recibida desde %s (%s): +$%,.2f",
-                concepto,
-                origen.getNumeroCuenta(),
-                origen.getPropietario(),
-                monto);
+        String debito = String.format("%s enviada a %s (%s): -$%,.2f", concepto, destino.getNumeroCuenta(), destino.getPropietario(), monto);
+        String credito = String.format("%s recibida desde %s (%s): +$%,.2f", concepto, origen.getNumeroCuenta(), origen.getPropietario(), monto);
 
-        origen.getMovimientos().add(debito);
-        destino.getMovimientos().add(credito);
+        Movimiento movOut = new Movimiento(origen.getMovimientos().size() + 1, TipoMovimiento.TRANSFERENCIA_OUT, monto, origen.getSaldo(), debito);
+        origen.getMovimientos().add(movOut);
+        movimientoRepo.save(movOut);
+
+        Movimiento movIn = new Movimiento(destino.getMovimientos().size() + 1, TipoMovimiento.TRANSFERENCIA_IN, monto, destino.getSaldo(), credito);
+        destino.getMovimientos().add(movIn);
+        movimientoRepo.save(movIn);
     }
 
     private void validarCuentaTransferible(Cuenta cuenta, String rol) {

@@ -39,12 +39,12 @@ public class CuentaAhorros extends Cuenta {
     }
 
     @Override
-    public List<String> getMovimientos() {
+    public List<Movimiento> getMovimientos() {
         return this.movimientos;
     }
 
     @Override
-    public void setMovimientos(List<String> movimientos) {}
+    public void setMovimientos(List<Movimiento> movimientos) {}
 
 
     public double calcularInteresRendimiento(double monto) {
