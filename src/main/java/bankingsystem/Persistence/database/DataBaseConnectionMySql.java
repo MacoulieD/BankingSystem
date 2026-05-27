@@ -3,13 +3,13 @@ package bankingsystem.Persistence.database;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-
+// Clase para manejar la conexión a la base de datos MySQL utilizando el patrón Singleton
 public class DataBaseConnectionMySql {
-
+// Instancia única de la clase
     private static DataBaseConnectionMySql instance;
     private final Connection connection;
 
-    private static final String URL      = "jdbc:mysql://localhost:3306/banking_system";
+    private static final String URL      = "jdbc:mysql://localhost:3307/banking_system";
     private static final String USERNAME = "root";
     private static final String PASSWORD = "";
 

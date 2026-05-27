@@ -1,17 +1,27 @@
 package bankingsystem.view;
 
 import bankingsystem.domain.Person;
-import bankingsystem.services.PersonService;
+import bankingsystem.services.input.PersonService;
 import bankingsystem.utils.FormValidation;
 
 public class PersonView {
+
     private final PersonService personService;
+
     public PersonView(PersonService personService){
         this.personService = personService;
     }
 
     public void createPerson(){
-        personService.createPerson();
+        int idPerson = FormValidation.validateInt("Ingrese el ID");
+        String name = FormValidation.validateString("Ingrese el nombre");
+        String telephone = FormValidation.validateString("Ingrese el teléfono");
+        String email = FormValidation.validateString("Ingrese el correo electrónico");
+        String username = FormValidation.validateString("Ingrese el nombre de usuario");
+        double initialBalance = FormValidation.validateDouble("Ingrese el saldo inicial");
+        String password = FormValidation.validateString("Ingrese la contraseña");
+
+        personService.createPerson(idPerson, name, telephone, email, username, initialBalance, password);
     }
 
     public void updatePerson(){

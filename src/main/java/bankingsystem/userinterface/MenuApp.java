@@ -4,7 +4,7 @@ import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.Person;
 import bankingsystem.domain.TarjetaCredito;
 import bankingsystem.domain.enums.TypoCuenta;
-import bankingsystem.services.CuentaServices;
+import bankingsystem.services.input.CuentaServices;
 import bankingsystem.utils.FormValidation;
 import bankingsystem.view.*;
 

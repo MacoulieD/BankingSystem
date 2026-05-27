@@ -2,6 +2,10 @@ package bankingsystem.Config;
 
 import bankingsystem.Persistence.repository.*;
 import bankingsystem.services.*;
+import bankingsystem.services.input.CuentaServices;
+import bankingsystem.services.input.LoginService;
+import bankingsystem.services.input.PersonService;
+import bankingsystem.services.input.TarjetaCreditoServices;
 import bankingsystem.view.CuentaView;
 import bankingsystem.view.LoginView;
 import bankingsystem.view.PersonView;

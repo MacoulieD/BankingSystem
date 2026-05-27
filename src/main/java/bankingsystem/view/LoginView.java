@@ -1,8 +1,8 @@
 package bankingsystem.view;
 
 import bankingsystem.domain.Person;
-import bankingsystem.services.LoginService;
-import bankingsystem.repository.PersonRepository;
+import bankingsystem.services.input.LoginService;
+import bankingsystem.Persistence.repository.PersonRepository;
 import bankingsystem.utils.FormValidation;
 
 public class LoginView {

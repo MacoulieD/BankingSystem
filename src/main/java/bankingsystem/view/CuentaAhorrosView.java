@@ -1,7 +1,7 @@
 package bankingsystem.view;
 
 import bankingsystem.domain.CuentaAhorros;
-import bankingsystem.services.CuentaAhorrosServices;
+import bankingsystem.services.input.CuentaAhorrosServices;
 import bankingsystem.utils.FormValidation;
 
 public class CuentaAhorrosView {

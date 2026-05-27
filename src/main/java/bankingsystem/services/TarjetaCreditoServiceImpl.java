@@ -6,6 +6,7 @@ import bankingsystem.domain.Movimiento;
 import bankingsystem.domain.TarjetaCredito;
 import bankingsystem.domain.enums.TipoMovimiento;
 import bankingsystem.Persistence.repository.MovimientoRepository;
+import bankingsystem.services.input.TarjetaCreditoServices;
 
 
 public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
