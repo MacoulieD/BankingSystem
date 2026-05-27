@@ -1,7 +1,7 @@
 package bankingsystem.view;
 
 import bankingsystem.domain.CuentaCorriente;
-import bankingsystem.services.CuentaCorrienteServices;
+import bankingsystem.services.input.CuentaCorrienteServices;
 import bankingsystem.utils.FormValidation;
 
 

@@ -6,6 +6,7 @@ import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.CuentaAhorros;
 import bankingsystem.domain.Movimiento;
 import bankingsystem.domain.enums.TipoMovimiento;
+import bankingsystem.services.input.CuentaAhorrosServices;
 
 
 public class CuentaAhorrosServiceImpl implements CuentaAhorrosServices {

@@ -6,6 +6,7 @@ import bankingsystem.domain.Movimiento;
 import bankingsystem.domain.enums.TipoMovimiento;
 import bankingsystem.Persistence.repository.CuentaCorrienteRepository;
 import bankingsystem.Persistence.repository.MovimientoRepository;
+import bankingsystem.services.input.CuentaCorrienteServices;
 
 
 public class CuentaCorrienteServiceImpl implements CuentaCorrienteServices {

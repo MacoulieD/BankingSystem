@@ -1,4 +1,4 @@
-package bankingsystem.services;
+package bankingsystem.services.input;
 
 import bankingsystem.domain.Person;
 
