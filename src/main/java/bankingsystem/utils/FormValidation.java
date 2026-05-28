@@ -55,8 +55,8 @@ public class FormValidation {
         }
     }
 
-    public static boolean validatePassword(String p1, String p2) {
-        if (!p1.equals(p2)) {
+    public static boolean validatePassword(String password, String ConfirmPassword) {
+        if (!password.equals(ConfirmPassword)) {
             System.out.println("❌ Las contraseñas no coinciden. Reintente.");
             return false;
         }
