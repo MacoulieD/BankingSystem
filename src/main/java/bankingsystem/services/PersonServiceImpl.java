@@ -13,7 +13,7 @@ import java.util.Optional;
 
 
 public class    PersonServiceImpl implements PersonService {
-
+//    private final PersonRepository personRepository;
     private final PersonaPersistencePort personRepository;
     private final CuentaServices cuentaService; // Inyectamos la interfaz general
 
