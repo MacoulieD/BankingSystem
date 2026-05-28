@@ -4,6 +4,8 @@ import bankingsystem.domain.Person;
 import bankingsystem.services.input.PersonService;
 import bankingsystem.utils.FormValidation;
 
+import javax.swing.*;
+
 public class PersonView {
 
     private final PersonService personService;
@@ -12,16 +14,25 @@ public class PersonView {
         this.personService = personService;
     }
 
-    public void createPerson(){
-        int idPerson = FormValidation.validateInt("Ingrese el ID");
-        String name = FormValidation.validateString("Ingrese el nombre");
-        String telephone = FormValidation.validateString("Ingrese el teléfono");
-        String email = FormValidation.validateString("Ingrese el correo electrónico");
-        String username = FormValidation.validateString("Ingrese el nombre de usuario");
-        double initialBalance = FormValidation.validateDouble("Ingrese el saldo inicial");
-        String password = FormValidation.validateString("Ingrese la contraseña");
+    public void createPerson() {
+        int idPerson = FormValidation.validateInt("Ingrese el ID: ");
+        String name = FormValidation.validateStringName("Ingrese el nombre: ");
+        String telephone = FormValidation.validateintPhone("Ingrese el teléfono: ");
+        String email = FormValidation.validateString("Ingrese el correo electrónico: ");
+        String username = FormValidation.validateString("Ingrese el nombre de usuario: ");
+        double initialBalance = FormValidation.validateDouble("Ingrese el saldo inicial: ");
 
-        personService.createPerson(idPerson, name, telephone, email, username, initialBalance, password);
+        String password;
+        String confirmPassword;
+        while (true) {
+            password = FormValidation.validateString("Ingrese la contraseña: ");
+            confirmPassword = FormValidation.validateString("Confirme la contraseña: ");
+            if (FormValidation.validatePassword(password, confirmPassword)) {
+                break;
+            }
+        }
+
+        personService.createPerson(idPerson, name, telephone, email, username, initialBalance, password, confirmPassword);
     }
 
     public void updatePerson(){

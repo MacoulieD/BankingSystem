@@ -6,6 +6,7 @@ import bankingsystem.services.input.CuentaServices;
 import bankingsystem.services.input.LoginService;
 import bankingsystem.services.input.PersonService;
 import bankingsystem.services.input.TarjetaCreditoServices;
+import bankingsystem.services.outputport.PersonaPersistencePort;
 import bankingsystem.view.CuentaView;
 import bankingsystem.view.LoginView;
 import bankingsystem.view.PersonView;
@@ -31,7 +32,7 @@ public class Config {
                 movimientoRepo
         );
 
-        PersonService personService = new PersonServiceImpl(personRepo, cuentaService);
+        PersonService personService = new PersonServiceImpl((PersonaPersistencePort) personRepo, cuentaService);
 
         LoginService loginService = new LoginServiceImpl(personRepo);
         TarjetaCreditoServices tarjetaService = new TarjetaCreditoServiceImpl(tarjetaRepo, movimientoRepo);

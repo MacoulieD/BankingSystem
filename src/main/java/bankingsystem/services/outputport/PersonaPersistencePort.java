@@ -14,6 +14,7 @@ public interface PersonaPersistencePort {
     Optional<Person> findPersonaByIdOptional(int id);
     Person findPersonaById(int id);
     Person findPersonaByUsername(String username);
+    Person findByUsername(String username);
     void deletePersona(int id);
 
 }

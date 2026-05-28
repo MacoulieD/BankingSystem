@@ -9,6 +9,8 @@ import bankingsystem.services.input.PersonService;
 import bankingsystem.services.outputport.PersonaPersistencePort;
 import bankingsystem.utils.FormValidation;
 
+import java.util.Optional;
+
 
 public class    PersonServiceImpl implements PersonService {
 
@@ -22,11 +24,36 @@ public class    PersonServiceImpl implements PersonService {
     }
 
     @Override
-    public Person createPerson(int id, String name, String telephone, String email, String username, double initialBalance, String password) {
+    public Person createPerson(int id, String name, String telephone, String email, String username, double initialBalance, String password, String confirmPassword) {
 
-        Person person = new Person(id, name, telephone, email, username, initialBalance, password);
+        Person person = new Person(id, name, telephone, email, username, initialBalance, password, confirmPassword);
 
         return personRepository.savePersona(person);
+    }
+
+    @Override
+    public Optional<Person> getPersonById(int id) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Person> getPersonByEmail(String email) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Person updatePerson(int id) {
+        return null;
+    }
+
+    @Override
+    public Person updatePersonByUsername(String username) {
+        return null;
+    }
+
+    @Override
+    public void deletePerson(int id) {
+
     }
 }
 

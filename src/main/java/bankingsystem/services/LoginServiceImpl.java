@@ -18,9 +18,8 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public Person login(String username, String password) {
-
-        Person person = personRepository.findByUsername(username);
-
+// ✅ Cambiado a 'findPersonaByUsername' para que jale los datos desde MySQL
+        Person person = personRepository.findPersonaByUsername(username);
 
         if (person == null) {
             System.out.println("❌ Error: El nombre de usuario no existe.");
