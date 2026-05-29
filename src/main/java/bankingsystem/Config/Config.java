@@ -32,9 +32,8 @@ public class Config {
         PersonService personService = new PersonServiceImpl(personaPersistencePortDB, null);
         PersonView personView = new PersonView(personService);
 
-
-
-
+        LoginService loginService = new LoginServiceImpl(personaPersistencePortDB);
+        LoginView loginView = new LoginView(loginService, personaPersistencePortDB);
 
 
         // 1. REPOSITORIOS
@@ -55,10 +54,8 @@ public class Config {
         );
 
 
-        LoginService loginService = new LoginServiceImpl(personRepo);
         TarjetaCreditoServices tarjetaService = new TarjetaCreditoServiceImpl(tarjetaRepo, movimientoRepo);
 
-        LoginView loginView = new LoginView(loginService, personRepo);
 
         CuentaView cuentaView = new CuentaView(cuentaService, tarjetaService);
 
