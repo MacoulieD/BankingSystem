@@ -1,9 +1,6 @@
 package bankingsystem.services;
 
-import bankingsystem.domain.Cuenta;
 import bankingsystem.domain.Person;
-import bankingsystem.domain.enums.TypoCuenta;
-import bankingsystem.Persistence.repository.PersonRepository;
 import bankingsystem.services.input.CuentaServices;
 import bankingsystem.services.input.PersonService;
 import bankingsystem.services.outputport.PersonaPersistencePort;
@@ -26,14 +23,14 @@ public class    PersonServiceImpl implements PersonService {
     @Override
     public Person createPerson(int id, String name, String telephone, String email, String username, double initialBalance, String password, String confirmPassword) {
 
-        Person person = new Person(id, name, telephone, email, username, initialBalance, password, confirmPassword);
+        Person person = new Person(id, name, telephone, email, username, initialBalance, password, confirmPassword, 0, null);
 
         return personRepository.savePersona(person);
     }
 
     @Override
     public Optional<Person> getPersonById(int id) {
-        return Optional.empty();
+        return personRepository.findPersonaByIdOptional(id);
     }
 
     @Override
@@ -42,13 +39,88 @@ public class    PersonServiceImpl implements PersonService {
     }
 
     @Override
-    public Person updatePerson(int id) {
-        return null;
-    }
+    public Person updatePerson(int id, String name, String telephone, String email, String username, double initialBalance, String password, String confirmPassword) {
+        Optional<Person> personOpt = personRepository.findPersonaByIdOptional(id);
+        if (personOpt.isPresent()) {
+            Person person = personOpt.get();
+            System.out.println("\n--- ACTUALIZACIÓN DE DATOS ---");
+            System.out.println("\n¿Qué dato deseas modificar?");
+            System.out.println("1. Identificación 2. Nombre completo 3. Celular 4. Email 5. Nombre de usuario 6. Contraseña");
+            int opcion = FormValidation.validateInt("Seleccione una opción: ");
+            switch (opcion) {
+                case 1:
+                    person.setId(FormValidation.validateInt("Nueva identificación: "));
+                    break;
+                case 2:
+                    person.setName(FormValidation.validateStringName("Nuevo nombre completo: "));
+                    break;
+                case 3:
+                    person.setTelephone(FormValidation.validateintPhone("Nuevo celular: "));
+                    break;
+                case 4:
+                    person.setEmail(FormValidation.validateString("Nuevo email: "));
+                    break;
+                case 5:
+                    String usernameActual = person.getUsername();
+                    String nuevoUsername;
 
-    @Override
-    public Person updatePersonByUsername(String username) {
-        return null;
+                    while (true) {
+                        nuevoUsername = FormValidation.validateString("Nuevo nombre de usuario: ");
+
+                        if (nuevoUsername.equalsIgnoreCase(usernameActual)) {
+                            System.out.println("ℹ️ El nuevo username es igual al actual. No se realizaron cambios.");
+                            break; //
+                        }
+
+                        Person existente = personRepository.findPersonaByUsername(nuevoUsername);
+                        if (existente != null && existente.getId() != person.getId()) {
+                            System.out.println("❌ El nombre de usuario '" + nuevoUsername + "' ya existe. Intente con uno diferente.");
+                        }
+                        else {
+                            person.setUsername(nuevoUsername);
+
+                            personRepository.updatePerson(person);
+
+                            System.out.println("🎉 ¡Cambio exitoso! Tu nombre de usuario ahora es: " + nuevoUsername);
+                            break; // Salimos del bucle ya que todo salió bien
+                        }
+                    }
+                case 6:
+                    String passwordActual = person.getPassword();
+                    String nuevaPassword;
+                    String confirmacionPassword;
+
+                    while (true) {
+                        nuevaPassword = FormValidation.validateString("Nueva contraseña: ");
+
+                        if (nuevaPassword.equals(passwordActual)) {
+                            System.out.println("❌ La nueva contraseña no puede ser igual a la contraseña actual. Elige una diferente.");
+                            continue; // Vuelve a pedir la contraseña
+                        }
+
+                        confirmacionPassword = FormValidation.validateString("Confirme su nueva contraseña: ");
+
+                        if (!nuevaPassword.equals(confirmacionPassword)) {
+                            System.out.println("❌ Las contraseñas no coinciden. Inténtalo de nuevo desde el principio.");
+                            continue; // Vuelve a empezar el ciclo
+                        }
+
+                        person.setPassword(nuevaPassword);
+
+                        personRepository.updatePerson(person);
+
+                        System.out.println("🎉 ¡Cambio de contraseña exitoso! Tu clave ha sido actualizada.");
+                        break;
+                    }
+                    default:
+                        System.out.println("❌ Opción no válida. No se realizaron cambios.");
+                        break;
+            }
+            return person;
+        }else {
+            System.out.println("❌ No se encontró un usuario con esa identificación.");
+            return null;
+        }
     }
 
     @Override

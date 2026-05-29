@@ -1,7 +1,8 @@
 package bankingsystem.Persistence.mapper;
-// Interfaz genérica para mapear filas de un ResultSet a objetos de dominio
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 public interface RowMapper<T> {
-
-    T mapRow(java.sql.ResultSet rs) throws java.sql.SQLException;
-
+    T mapRow(ResultSet rs) throws SQLException;
 }

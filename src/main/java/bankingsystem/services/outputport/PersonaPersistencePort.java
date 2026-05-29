@@ -12,9 +12,10 @@ public interface PersonaPersistencePort {
     Person savePersona(Person person);
     List<Person> findAllPersonas();
     Optional<Person> findPersonaByIdOptional(int id);
-    Person findPersonaById(int id);
+    Optional<Person> findPersonaById(int id);
     Person findPersonaByUsername(String username);
     Person findByUsername(String username);
+    Person updatePerson(int id, String name, String telephone, String email, String username, double initialBalance, String password);
     void deletePersona(int id);
-
+    Person updatePerson(Person person);
 }
