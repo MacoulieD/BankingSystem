@@ -1,30 +1,31 @@
 package bankingsystem.services;
 
-
-import bankingsystem.Persistence.repository.TarjetaCreditoRepository;
 import bankingsystem.domain.Movimiento;
 import bankingsystem.domain.TarjetaCredito;
 import bankingsystem.domain.enums.TipoMovimiento;
 import bankingsystem.Persistence.repository.MovimientoRepository;
 import bankingsystem.services.input.TarjetaCreditoServices;
+import bankingsystem.services.outputport.TarjetaCreditoPersistencePort; // ✅ Puerto importado correctamente
 
+import java.util.List;
 
 public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
 
-    private final TarjetaCreditoRepository tarjetaRepo;
+    // ✅ CORREGIDO: Ahora el atributo apunta directamente a la interfaz del puerto
+    private final TarjetaCreditoPersistencePort tarjetaRepo;
     private final MovimientoRepository movimientoRepo;
 
-    public TarjetaCreditoServiceImpl(TarjetaCreditoRepository tarjetaRepo, MovimientoRepository movimientoRepo) {
+    // ✅ CORREGIDO: Constructor alineado con la Arquitectura Hexagonal
+    public TarjetaCreditoServiceImpl(TarjetaCreditoPersistencePort tarjetaRepo, MovimientoRepository movimientoRepo) {
         this.tarjetaRepo = tarjetaRepo;
         this.movimientoRepo = movimientoRepo;
     }
 
     @Override
     public void realizarCompra(String username, double monto, int cuotas) {
-        TarjetaCredito tc = tarjetaRepo.findAllTarjetas().stream()
-                .filter(t -> t.getPropietario().equalsIgnoreCase(username))
-                .findFirst()
-                .orElse(null);
+        // ✅ CORREGIDO: Buscamos directamente en MySQL por propietario usando el puerto
+        List<TarjetaCredito> tarjetas = tarjetaRepo.findByPropietario(username);
+        TarjetaCredito tc = (tarjetas != null && !tarjetas.isEmpty()) ? tarjetas.get(0) : null;
 
         if (tc == null) {
             throw new RuntimeException("No tienes una tarjeta de crédito activa.");
@@ -38,30 +39,35 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
             throw new RuntimeException("El número de cuotas debe ser mayor a cero.");
         }
 
-
-        if (tc.getCupoDisponible() < monto) {
-            throw new RuntimeException("Cupo insuficiente. Disponible: $" + tc.getCupoDisponible());
+        if (tc.getSaldo() < monto) { // Nota: Recuerda que 'getSaldo()' en tu dominio maneja el cupo disponible libre en memoria
+            throw new RuntimeException("Cupo insuficiente. Disponible: $" + tc.getSaldo());
         }
-
 
         double valorCuota = tc.calcularCuotaMensual(monto, cuotas);
         String obs = tc.getObservacionInteres(cuotas);
 
-        tc.setSaldo(tc.getSaldo() + monto);
+        // Al comprar, disminuye el saldo disponible en memoria
+        tc.setSaldo(tc.getSaldo() - monto);
 
-
-        Movimiento movCompra = new Movimiento(tc.getMovimientos().size() + 1, TipoMovimiento.COMPRA_TC, monto, tc.getSaldo(), String.format("Compra: +$%,.2f (%d cuotas de $%,.2f - %s)", monto, cuotas, valorCuota, obs));
+        Movimiento movCompra = new Movimiento(
+                tc.getMovimientos().size() + 1,
+                TipoMovimiento.COMPRA_TC,
+                monto,
+                tc.getSaldo(),
+                String.format("Compra: +$%,.2f (%d cuotas de $%,.2f - %s)", monto, cuotas, valorCuota, obs)
+        );
         tc.getMovimientos().add(movCompra);
         movimientoRepo.save(movCompra);
+
+        // ✅ NUEVO: Sincronizamos y persistimos el cambio de estado de la tarjeta en la base de datos
+        tarjetaRepo.saveTarjeta(tc);
     }
 
     @Override
     public void pagarCuota(String username, double monto) {
-        // Buscamos la tarjeta
-        TarjetaCredito tc = tarjetaRepo.findAllTarjetas().stream()
-                .filter(t -> t.getPropietario().equalsIgnoreCase(username))
-                .findFirst()
-                .orElse(null);
+        // ✅ CORREGIDO: Buscamos directamente en MySQL usando el puerto
+        List<TarjetaCredito> tarjetas = tarjetaRepo.findByPropietario(username);
+        TarjetaCredito tc = (tarjetas != null && !tarjetas.isEmpty()) ? tarjetas.get(0) : null;
 
         if (tc == null) {
             throw new RuntimeException("No se encontró la tarjeta.");
@@ -71,22 +77,35 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
             throw new RuntimeException("El monto de pago debe ser mayor a cero.");
         }
 
-        if (monto > tc.getSaldo()) {
-            throw new RuntimeException("El pago excede la deuda actual ($" + tc.getSaldo() + ")");
+        // Calculamos la deuda real basándonos en la firma de tu entidad
+        double cupoTotal = tc.getCupoTotal(tc.getSaldo());
+        double deudaActual = cupoTotal - tc.getSaldo();
+
+        if (monto > deudaActual) {
+            throw new RuntimeException("El pago excede la deuda actual ($" + deudaActual + ")");
         }
 
+        // Al pagar, recuperamos espacio en el saldo disponible en memoria
+        tc.setSaldo(tc.getSaldo() + monto);
 
-        tc.setSaldo(tc.getSaldo() - monto);
-        Movimiento movPago = new Movimiento(tc.getMovimientos().size() + 1, TipoMovimiento.PAGO_TC, monto, tc.getSaldo(), String.format("Pago realizado: -$%,.2f", monto));
+        Movimiento movPago = new Movimiento(
+                tc.getMovimientos().size() + 1,
+                TipoMovimiento.PAGO_TC,
+                monto,
+                tc.getSaldo(),
+                String.format("Pago realizado: -$%,.2f", monto)
+        );
         tc.getMovimientos().add(movPago);
         movimientoRepo.save(movPago);
+
+        // ✅ NUEVO: Guardamos el estado actualizado en MySQL
+        tarjetaRepo.saveTarjeta(tc);
     }
 
     @Override
     public TarjetaCredito buscarTarjeta(String username) {
-        return tarjetaRepo.findAllTarjetas().stream()
-                .filter(t -> t.getPropietario().equalsIgnoreCase(username))
-                .findFirst()
-                .orElse(null);
+        // ✅ CORREGIDO: Cambiado el filtro manual stream de memoria por consulta directa optimizada a MySQL
+        List<TarjetaCredito> tarjetas = tarjetaRepo.findByPropietario(username);
+        return (tarjetas != null && !tarjetas.isEmpty()) ? tarjetas.get(0) : null;
     }
 }

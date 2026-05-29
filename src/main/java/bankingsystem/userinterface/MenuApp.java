@@ -201,7 +201,6 @@ public class MenuApp {
     private void mostrarResumenCuentas(String username) {
         System.out.println("\n=== RESUMEN DE PRODUCTOS ===");
 
-
         List<Cuenta> misCuentas = this.cuentaService.listarTodasLasCuentas().stream()
                 .filter(c -> c.getPropietario().equalsIgnoreCase(username))
                 .toList();
@@ -211,8 +210,22 @@ public class MenuApp {
         } else {
             for (Cuenta c : misCuentas) {
                 if (c instanceof TarjetaCredito tc) {
+                    // 1. El cupo disponible real en tu dominio está guardado en el método getSaldo()
+                    double disponible = tc.getSaldo();
+
+                    // 2. Calculamos el cupo total pasándole el disponible como exige la firma de tu entidad
+                    double cupoTotal = tc.getCupoTotal(disponible);
+
+                    // 3. Deuda Total = Límite otorgado - Dinero que te queda libre
+                    double deudaTotal = cupoTotal - disponible;
+
                     System.out.printf("- [%s No: %s | Cupo Total: $%,.2f | Cupo Disponible: $%,.2f | Deuda Total: $%,.2f]%n",
-                            c.getTipo(), c.getNumeroCuenta(), tc.getCupoTotal(), tc.getCupoDisponible(), tc.getSaldo());
+                            c.getTipo(),
+                            c.getNumeroCuenta(),
+                            cupoTotal,
+                            disponible,
+                            deudaTotal
+                    );
                 } else {
                     System.out.printf("- [%s No: %s | Saldo Total: $%,.2f]%n",
                             c.getTipo(), c.getNumeroCuenta(), c.getSaldo());
