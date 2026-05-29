@@ -1,5 +1,7 @@
 package bankingsystem.Config;
 
+import bankingsystem.Persistence.database.DataBaseConnectionMySql;
+import bankingsystem.Persistence.mapper.PersonRowmapper;
 import bankingsystem.Persistence.repository.*;
 import bankingsystem.services.*;
 import bankingsystem.services.input.CuentaServices;
@@ -12,9 +14,29 @@ import bankingsystem.view.LoginView;
 import bankingsystem.view.PersonView;
 import bankingsystem.userinterface.MenuApp;
 
+import java.sql.Connection;
+
 public class Config {
 
     public static MenuApp createMenuApp() {
+
+
+        Connection dbConnection = DataBaseConnectionMySql.getInstance().getConnection();
+
+
+        PersonRowmapper personRowmapper = new PersonRowmapper();
+
+
+        PersonaPersistencePort personaPersistencePort =new PersonRepository();
+        PersonaPersistencePort personaPersistencePortDB = new PersonRepositoryAdapterMySql(dbConnection, personRowmapper);
+        PersonService personService = new PersonServiceImpl(personaPersistencePortDB, null);
+        PersonView personView = new PersonView(personService);
+
+
+
+
+
+
         // 1. REPOSITORIOS
         PersonRepository personRepo = new PersonRepository();
         CuentaRepository cuentaGeneralRepo = new CuentaRepository();
@@ -32,12 +54,10 @@ public class Config {
                 movimientoRepo
         );
 
-        PersonService personService = new PersonServiceImpl((PersonaPersistencePort) personRepo, cuentaService);
 
         LoginService loginService = new LoginServiceImpl(personRepo);
         TarjetaCreditoServices tarjetaService = new TarjetaCreditoServiceImpl(tarjetaRepo, movimientoRepo);
 
-        PersonView personView = new PersonView(personService);
         LoginView loginView = new LoginView(loginService, personRepo);
 
         CuentaView cuentaView = new CuentaView(cuentaService, tarjetaService);

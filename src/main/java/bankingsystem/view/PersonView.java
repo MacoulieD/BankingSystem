@@ -5,6 +5,7 @@ import bankingsystem.services.input.PersonService;
 import bankingsystem.utils.FormValidation;
 
 import javax.swing.*;
+import java.util.Optional;
 
 public class PersonView {
 
@@ -34,17 +35,67 @@ public class PersonView {
 
         personService.createPerson(idPerson, name, telephone, email, username, initialBalance, password, confirmPassword);
     }
+    public  void getPersonById(int id) {
+        int idPerson = FormValidation.validateInt("Ingrese el ID de la persona: ");
+        Person person = personService.getPersonById(id).orElseThrow();
+        System.out.println("ID: " + person.getId() + ", Name: " + person.getName()
+                + ", Telephone: " + person.getTelephone()
+                + ", Email: " + person.getEmail()
+                + ", Username: " + person.getUsername()
+                + ", Initial Balance: " + person.getInitialBalance());
+
+    }
 
     public void updatePerson(){
-        personService.updatePerson(FormValidation.validateInt("Ingrese el ID"));
-    }
+        System.out.println("Estoy en la Vista");
+        int id = FormValidation.validateInt("Ingrese el ID de la persona: ");
 
-    public Person updateLoggedPerson(String username){
-        return personService.updatePersonByUsername(username);
-    }
-
-        public void deletePerson(){
-            personService.deletePerson(FormValidation.validateInt("Ingrese el id de la persona a eliminar"));
+        Optional<Person> personOptional = personService.getPersonById(id);
+        if (personOptional.isEmpty()) {
+            System.out.println("❌ No se encontró ninguna persona con el ID ingresado.");
+            return;
         }
 
+        Person person = personOptional.get();
+        String name = FormValidation.validateStringName("Ingrese el nombre: ");
+        String telephone = FormValidation.validateintPhone("Ingrese el teléfono: ");
+        String email = FormValidation.validateString("Ingrese el correo electrónico: ");
+        String username = FormValidation.validateString("Ingrese el nombre de usuario: ");
+        double initialBalance = FormValidation.validateDouble("Ingrese el saldo inicial: ");
+
+        String password;
+        String confirmPassword;
+        String passwordActual = person.getPassword();
+
+        while (true) {
+            password = FormValidation.validateString("Ingrese la nueva contraseña: ");
+
+            if (password.equals(passwordActual)) {
+                System.out.println("❌ La nueva contraseña no puede ser igual a la anterior. Elige otra.");
+                continue;
+            }
+
+            confirmPassword = FormValidation.validateString("Confirme la contraseña: ");
+
+            if (!password.equals(confirmPassword)) {
+                System.out.println("❌ Las contraseñas no coinciden. Inténtalo de nuevo.");
+                continue;
+            }
+
+            break; // Rompe el bucle WHILE únicamente
+        } // <-- AQUÍ CIERRA EL WHILE
+
+        // Corregido: La llamada al servicio va AFUERA del while y ADENTRO del método
+        personService.updatePerson(id, name, telephone, email, username, initialBalance, password, confirmPassword);
+        System.out.println("🎉 ¡Persona actualizada con éxito!");
+    }
+
+    public void deletePerson(){
+        personService.deletePerson(FormValidation.validateInt("Ingrese el ID de la persona a eliminar: "));
+    }
+
+    public Person updateLoggedPerson(String username) {
+
+        return null;
+    }
 }
