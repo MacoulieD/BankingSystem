@@ -1,6 +1,7 @@
 package bankingsystem.services;
 
 import bankingsystem.domain.Person;
+import bankingsystem.domain.enums.TypoCuenta;
 import bankingsystem.services.input.CuentaServices;
 import bankingsystem.services.input.PersonService;
 import bankingsystem.services.outputport.PersonaPersistencePort;
@@ -21,11 +22,32 @@ public class    PersonServiceImpl implements PersonService {
     }
 
     @Override
-    public Person createPerson(int id, String name, String telephone, String email, String username, double initialBalance, String password, String confirmPassword) {
-
+    public Person createPerson(int id, String name, String telephone, String email, String username, double initialBalance, String password, String confirmPassword, TypoCuenta tipoCuenta) {
+        if (personRepository.findPersonaByIdOptional(id).isPresent()) {
+            System.out.println("❌ Ya existe un usuario con el ID " + id + ". Ingrese un ID diferente.");
+            return null;
+        }
         Person person = new Person(id, name, telephone, email, username, initialBalance, password, confirmPassword, 0, null);
-
-        return personRepository.savePersona(person);
+        Person saved;
+        try {
+            saved = personRepository.savePersona(person);
+        } catch (RuntimeException e) {
+            String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+            if (msg.contains("email")) {
+                System.out.println("❌ El correo electrónico ingresado ya está registrado. Ingrese uno diferente.");
+            } else {
+                System.out.println("❌ No se pudo registrar el usuario: " + e.getMessage());
+            }
+            return null;
+        }
+        try {
+            cuentaService.crearCuenta(username, initialBalance, tipoCuenta);
+        } catch (RuntimeException e) {
+            System.out.println("❌ Usuario registrado pero no se pudo crear la cuenta: " + e.getMessage());
+            return saved;
+        }
+        System.out.println("✅ Cuenta inicial creada: " + tipoCuenta + ".");
+        return saved;
     }
 
     @Override

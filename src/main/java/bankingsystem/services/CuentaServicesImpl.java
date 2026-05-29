@@ -1,6 +1,5 @@
 package bankingsystem.services;
 
-import bankingsystem.Persistence.repository.CuentaAhorrosRepository;
 import bankingsystem.Persistence.repository.CuentaCorrienteRepository;
 import bankingsystem.Persistence.repository.CuentaRepository;
 import bankingsystem.Persistence.repository.MovimientoRepository;
@@ -9,6 +8,7 @@ import bankingsystem.domain.*;
 import bankingsystem.domain.enums.TipoMovimiento;
 import bankingsystem.domain.enums.TypoCuenta;
 import bankingsystem.services.input.CuentaServices;
+import bankingsystem.services.outputport.CuentaAhorrosPersistencePort;
 
 import java.util.List;
 
@@ -16,13 +16,13 @@ import java.util.List;
 public class CuentaServicesImpl implements CuentaServices {
 
     private final CuentaRepository repository;
-    private final CuentaAhorrosRepository ahorrosRepo;
+    private final CuentaAhorrosPersistencePort ahorrosRepo;
     private final CuentaCorrienteRepository corrienteRepo;
     private final TarjetaCreditoRepository tarjetaRepo;
     private final MovimientoRepository movimientoRepo;
 
     public CuentaServicesImpl(CuentaRepository repository,
-                              CuentaAhorrosRepository ahorrosRepo,
+                              CuentaAhorrosPersistencePort ahorrosRepo,
                               CuentaCorrienteRepository corrienteRepo,
                               TarjetaCreditoRepository tarjetaRepo,
                               MovimientoRepository movimientoRepo) {
@@ -40,7 +40,7 @@ public class CuentaServicesImpl implements CuentaServices {
             throw new RuntimeException("Ya existe una cuenta de tipo " + tipo + " para este usuario.");
         }
 
-        int siguienteId = repository.findAllCuentas().size() + 1;
+        int siguienteId = ahorrosRepo.countCuentas() + 1;
         String prefijo = switch (tipo) {
             case AHORROS -> "CA-";
             case CORRIENTE -> "CC-";
@@ -52,8 +52,8 @@ public class CuentaServicesImpl implements CuentaServices {
             case AHORROS -> {
                 CuentaAhorros ahorro = new CuentaAhorros(numCuenta, saldoInicial, username);
                 ahorro.setTipo(TypoCuenta.AHORROS);
-                ahorrosRepo.saveCuentaA(ahorro); // Guarda en repositorio de ahorros
-                repository.saveCuenta(ahorro);   // Guarda en repositorio general
+                ahorrosRepo.saveCuentaAhorros(ahorro); // Guarda en BD (cuentas + cuenta_ahorros)
+                repository.saveCuenta(ahorro);         // Guarda en repositorio general in-memory
             }
             case CORRIENTE -> {
                 double sobregiro = saldoInicial * 0.2;
@@ -74,7 +74,7 @@ public class CuentaServicesImpl implements CuentaServices {
     @Override
     public Cuenta obtenerCuentaPorTipo(String username, TypoCuenta tipo) {
         return switch (tipo) {
-            case AHORROS -> ahorrosRepo.fidByPropietario(username);
+            case AHORROS -> ahorrosRepo.findByPropietario(username);
             case CORRIENTE -> corrienteRepo.findbypropietario(username);
             case TARJETA_CREDITO -> tarjetaRepo.findByPropietario(username);
         };

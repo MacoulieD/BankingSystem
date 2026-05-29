@@ -1,6 +1,7 @@
 package bankingsystem.view;
 
 import bankingsystem.domain.Person;
+import bankingsystem.domain.enums.TypoCuenta;
 import bankingsystem.services.input.PersonService;
 import bankingsystem.utils.FormValidation;
 
@@ -21,7 +22,6 @@ public class PersonView {
         String telephone = FormValidation.validateintPhone("Ingrese el teléfono: ");
         String email = FormValidation.validateString("Ingrese el correo electrónico: ");
         String username = FormValidation.validateString("Ingrese el nombre de usuario: ");
-        double initialBalance = FormValidation.validateDouble("Ingrese el saldo inicial: ");
 
         String password;
         String confirmPassword;
@@ -33,7 +33,20 @@ public class PersonView {
             }
         }
 
-        personService.createPerson(idPerson, name, telephone, email, username, initialBalance, password, confirmPassword);
+        System.out.println("\n¿Qué tipo de cuenta desea abrir?");
+        System.out.println("1. Cuenta de Ahorros");
+        System.out.println("2. Cuenta Corriente");
+        TypoCuenta tipoCuenta;
+        while (true) {
+            int opcion = FormValidation.validateInt("Seleccione una opción: ");
+            tipoCuenta = TypoCuenta.desdeId(opcion);
+            if (tipoCuenta == TypoCuenta.AHORROS || tipoCuenta == TypoCuenta.CORRIENTE) break;
+            System.out.println("❌ Opción no válida. Seleccione 1 (Ahorros) o 2 (Corriente).");
+        }
+
+        double initialBalance = FormValidation.validateDouble("Ingrese el saldo inicial: ");
+
+        personService.createPerson(idPerson, name, telephone, email, username, initialBalance, password, confirmPassword, tipoCuenta);
     }
     public  void getPersonById(int id) {
         int idPerson = FormValidation.validateInt("Ingrese el ID de la persona: ");
