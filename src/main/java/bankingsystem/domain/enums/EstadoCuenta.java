@@ -4,5 +4,10 @@ public enum EstadoCuenta {
     ACTIVA,
     INACTIVA,
     BLOQUEADA,
-    CERRADA
+    CERRADA;
+
+    public boolean equalsIgnoreCase(String activa) {
+        return false;
+    }
+
 }

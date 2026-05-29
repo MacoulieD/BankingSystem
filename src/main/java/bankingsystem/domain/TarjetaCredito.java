@@ -13,8 +13,14 @@ public class TarjetaCredito extends Cuenta {
         this.tipo = TypoCuenta.TARJETA_CREDITO;
     }
 
+    public TarjetaCredito(String numeroTarjeta, String propietario, double limiteCredito) {
+        super(numeroTarjeta, 0, propietario);
+        this.cupoTotal = limiteCredito;
+        this.tipo = TypoCuenta.TARJETA_CREDITO;
+    }
+
     // --- Lógica de Cupo ---
-    public double getCupoTotal() {
+    public double getCupoTotal(double cupoDisponible) {
         return cupoTotal;
     }
 // El cupo disponible se calcula restando la deuda actual (saldo) del cupo total.
@@ -41,7 +47,13 @@ public class TarjetaCredito extends Cuenta {
         // Fórmula de amortización francesa
         return (capital * tasa) / (1 - Math.pow(1 + tasa, -n));
     }
-// El método toString se sobrescribe para mostrar la información relevante de la tarjeta, incluyendo el número de cuenta, la deuda actual y el cupo disponible.
+
+    @Override
+    public String getNumeroCuenta() {
+        return super.getNumeroCuenta();
+    }
+
+    // El método toString se sobrescribe para mostrar la información relevante de la tarjeta, incluyendo el número de cuenta, la deuda actual y el cupo disponible.
     @Override
     public String toString() {
         return String.format("Tarjeta [%s] | Deuda: $%,.2f | Disponible: $%,.2f",
@@ -59,4 +71,5 @@ public class TarjetaCredito extends Cuenta {
     @Override
     public void setMovimientos(List<Movimiento> movimientos) {
     }
+
 }
