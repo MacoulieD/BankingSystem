@@ -11,8 +11,9 @@ public class CuentaAhorrosRepository implements CuentaAhorrosPersistencePort {
     private final List<CuentaAhorros> cuentasAhorros = new ArrayList<>();
 
     @Override
-    public void saveCuentaAhorros(CuentaAhorros cuenta) {
+    public CuentaAhorros saveCuentaAhorros(CuentaAhorros cuenta) {
         cuentasAhorros.add(cuenta);
+        return cuenta;
     }
 
     @Override

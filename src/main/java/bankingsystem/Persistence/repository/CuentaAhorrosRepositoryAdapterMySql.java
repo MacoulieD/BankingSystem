@@ -20,31 +20,49 @@ public class CuentaAhorrosRepositoryAdapterMySql implements CuentaAhorrosPersist
     }
 
     @Override
-    public void saveCuentaAhorros(CuentaAhorros cuenta) {
-        // 1. INSERT en cuentas primero (FK: cuenta_ahorros.numero_cuenta → cuentas.numero_cuenta)
-        String sqlCuentas = "INSERT INTO cuentas (numero_cuenta, propietario, tipo_cuenta, saldo, estado) VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = dbConnection.prepareStatement(sqlCuentas)) {
-            ps.setString(1, cuenta.getNumeroCuenta());
-            ps.setString(2, cuenta.getPropietario());
-            ps.setString(3, "AHORROS");
-            ps.setDouble(4, cuenta.getSaldo());
-            ps.setString(5, cuenta.getEstado().name());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al guardar en tabla cuentas: " + e.getMessage(), e);
-        }
+    public CuentaAhorros saveCuentaAhorros(CuentaAhorros cuenta) {
+        // ON DUPLICATE KEY UPDATE → si la cuenta ya existe solo actualiza el saldo
+        String sqlCuentas = "INSERT INTO cuentas (numero_cuenta, propietario, tipo_cuenta, saldo, estado) VALUES (?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE saldo = VALUES(saldo), estado = VALUES(estado)";
+        String sqlAhorros = "INSERT INTO cuenta_ahorros (numero_cuenta, propietario, saldo, tasa_interes) VALUES (?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE saldo = VALUES(saldo)";
 
-        // 2. INSERT en cuenta_ahorros
-        String sqlAhorros = "INSERT INTO cuenta_ahorros (numero_cuenta, propietario, saldo, tasa_interes) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement ps = dbConnection.prepareStatement(sqlAhorros)) {
-            ps.setString(1, cuenta.getNumeroCuenta());
-            ps.setString(2, cuenta.getPropietario());
-            ps.setDouble(3, cuenta.getSaldo());
-            ps.setDouble(4, cuenta.getTasaInteres());
-            ps.executeUpdate();
-            System.out.println("✅ Cuenta de Ahorros guardada en base de datos. Número: " + cuenta.getNumeroCuenta());
+        try {
+            dbConnection.setAutoCommit(false);
+
+            try (PreparedStatement ps = dbConnection.prepareStatement(sqlCuentas)) {
+                ps.setString(1, cuenta.getNumeroCuenta());
+                ps.setString(2, cuenta.getPropietario());
+                ps.setString(3, "AHORROS");
+                ps.setDouble(4, cuenta.getSaldo());
+                ps.setString(5, cuenta.getEstado() != null ? cuenta.getEstado().name() : "ACTIVA");
+                ps.executeUpdate();
+            }
+
+            try (PreparedStatement ps = dbConnection.prepareStatement(sqlAhorros)) {
+                ps.setString(1, cuenta.getNumeroCuenta());
+                ps.setString(2, cuenta.getPropietario());
+                ps.setDouble(3, cuenta.getSaldo());
+                ps.setDouble(4, cuenta.getTasaInteres());
+                ps.executeUpdate();
+            }
+
+            dbConnection.commit();
+            return cuenta;
+
         } catch (SQLException e) {
-            throw new RuntimeException("Error al guardar en tabla cuenta_ahorros: " + e.getMessage(), e);
+            try {
+                dbConnection.rollback();
+            } catch (SQLException rollbackEx) {
+                rollbackEx.printStackTrace();
+            }
+            throw new RuntimeException("Error transaccional al guardar la cuenta de ahorros: " + e.getMessage(), e);
+        } finally {
+            try {
+                dbConnection.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -62,7 +80,11 @@ public class CuentaAhorrosRepositoryAdapterMySql implements CuentaAhorrosPersist
 
     @Override
     public CuentaAhorros findByPropietario(String username) {
-        String sql = "SELECT numero_cuenta, propietario, saldo FROM cuenta_ahorros WHERE propietario = ?";
+        String sql = "SELECT c.numero_cuenta, c.propietario, c.saldo, c.estado, ca.tasa_interes " +
+                "FROM cuentas c " +
+                "INNER JOIN cuenta_ahorros ca ON c.numero_cuenta = ca.numero_cuenta " +
+                "WHERE LOWER(TRIM(c.propietario)) = LOWER(TRIM(?))";
+
         try (PreparedStatement ps = dbConnection.prepareStatement(sql)) {
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {

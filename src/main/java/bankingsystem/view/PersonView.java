@@ -48,15 +48,22 @@ public class PersonView {
 
         personService.createPerson(idPerson, name, telephone, email, username, initialBalance, password, confirmPassword, tipoCuenta);
     }
-    public  void getPersonById(int id) {
+
+    public void getPersonById() {
         int idPerson = FormValidation.validateInt("Ingrese el ID de la persona: ");
-        Person person = personService.getPersonById(id).orElseThrow();
+        Optional<Person> personOptional = personService.getPersonById(idPerson);
+
+        if (personOptional.isEmpty()) {
+            System.out.println("❌ No se encontró ninguna persona con el ID ingresado.");
+            return;
+        }
+
+        Person person = personOptional.get();
         System.out.println("ID: " + person.getId() + ", Name: " + person.getName()
                 + ", Telephone: " + person.getTelephone()
                 + ", Email: " + person.getEmail()
                 + ", Username: " + person.getUsername()
                 + ", Initial Balance: " + person.getInitialBalance());
-
     }
 
     public void updatePerson(){
@@ -95,10 +102,9 @@ public class PersonView {
                 continue;
             }
 
-            break; // Rompe el bucle WHILE únicamente
-        } // <-- AQUÍ CIERRA EL WHILE
+            break;
+        }
 
-        // Corregido: La llamada al servicio va AFUERA del while y ADENTRO del método
         personService.updatePerson(id, name, telephone, email, username, initialBalance, password, confirmPassword);
         System.out.println("🎉 ¡Persona actualizada con éxito!");
     }
@@ -108,7 +114,6 @@ public class PersonView {
     }
 
     public Person updateLoggedPerson(String username) {
-
         return null;
     }
 }
