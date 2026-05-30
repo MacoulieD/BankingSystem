@@ -147,7 +147,7 @@ public class PersonRepositoryAdapterMySql implements PersonaPersistencePort {
 
             // ✅ Actualiza propietario en todas las tablas de cuentas
             if (usernameChanged) {
-                String[] tablas = {"cuentas", "cuenta_ahorros", "cuenta_corriente", "tarjetas_credito"};
+                String[] tablas = {"cuentas", "cuenta_ahorros", "cuenta_corriente", "tarjetas_credito", "movimientos"};
                 for (String tabla : tablas) {
                     String sqlCuenta = "UPDATE " + tabla + " SET propietario = ? WHERE propietario = ?";
                     try (PreparedStatement ps = dbconnection.prepareStatement(sqlCuenta)) {
@@ -174,7 +174,7 @@ public class PersonRepositoryAdapterMySql implements PersonaPersistencePort {
             // 1. Desactiva FK temporalmente para poder actualizar sin conflicto
             dbconnection.createStatement().execute("SET FOREIGN_KEY_CHECKS = 0");
 
-            String[] tablas = {"cuentas", "cuenta_ahorros", "cuenta_corriente", "tarjetas_credito"};
+            String[] tablas = {"cuentas", "cuenta_ahorros", "cuenta_corriente", "tarjetas_credito", "movimientos"};
             for (String tabla : tablas) {
                 String sql = "UPDATE " + tabla + " SET propietario = ? WHERE propietario = ?";
                 try (PreparedStatement ps = dbconnection.prepareStatement(sql)) {

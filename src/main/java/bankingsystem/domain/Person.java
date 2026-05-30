@@ -11,7 +11,7 @@ public class Person {
     private String email;
     private String username;
     private double initialBalance;
-    private static String password;
+    private String password;
     private String confirmPassword;
 
     // NUEVOS ATRIBUTOS PARA SEGURIDAD (CRITERIOS DE LOGIN)
@@ -78,7 +78,7 @@ public class Person {
         this.username = username;
     }
 
-    public static String getPassword() {
+    public String getPassword() {
         return password;
     }
 
