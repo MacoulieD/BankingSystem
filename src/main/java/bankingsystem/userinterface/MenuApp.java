@@ -201,7 +201,6 @@ public class MenuApp {
     private void mostrarResumenCuentas(String username) {
         System.out.println("\n=== RESUMEN DE PRODUCTOS ===");
 
-
         List<Cuenta> misCuentas = this.cuentaService.listarTodasLasCuentas().stream()
                 .filter(c -> c.getPropietario().equalsIgnoreCase(username))
                 .toList();
@@ -211,8 +210,17 @@ public class MenuApp {
         } else {
             for (Cuenta c : misCuentas) {
                 if (c instanceof TarjetaCredito tc) {
+                    double deudaTotal = tc.getSaldo();
+                    double cupoTotal = tc.getCupoTotal(0);
+                    double disponible = tc.getCupoDisponible();
+
                     System.out.printf("- [%s No: %s | Cupo Total: $%,.2f | Cupo Disponible: $%,.2f | Deuda Total: $%,.2f]%n",
-                            c.getTipo(), c.getNumeroCuenta(), tc.getCupoTotal(), tc.getCupoDisponible(), tc.getSaldo());
+                            c.getTipo(),
+                            c.getNumeroCuenta(),
+                            cupoTotal,
+                            disponible,
+                            deudaTotal
+                    );
                 } else {
                     System.out.printf("- [%s No: %s | Saldo Total: $%,.2f]%n",
                             c.getTipo(), c.getNumeroCuenta(), c.getSaldo());

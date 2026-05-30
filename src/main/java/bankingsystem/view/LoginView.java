@@ -2,14 +2,14 @@ package bankingsystem.view;
 
 import bankingsystem.domain.Person;
 import bankingsystem.services.input.LoginService;
-import bankingsystem.Persistence.repository.PersonRepository;
+import bankingsystem.services.outputport.PersonaPersistencePort;
 import bankingsystem.utils.FormValidation;
 
 public class LoginView {
     private final LoginService loginService;
-    private final PersonRepository personRepository;
+    private final PersonaPersistencePort personRepository;
 
-    public LoginView(LoginService loginService, PersonRepository personRepository) {
+    public LoginView(LoginService loginService, PersonaPersistencePort personRepository) {
         this.loginService = loginService;
         this.personRepository = personRepository;
     }
@@ -18,20 +18,16 @@ public class LoginView {
         System.out.println("\n--- ACCESO AL SISTEMA ---");
         String username = FormValidation.validateString("Usuario: ");
 
-        // 1. Verificación básica: ¿Existe el usuario en la BD?
         if (!doesUserExist(username)) {
             return null;
         }
 
-        // 2. Bucle para validar la contraseña e iniciar sesión
         while (true) {
             if (isUserBlocked(username)) {
                 return null;
             }
 
             String pass = FormValidation.validateString("Contraseña: ");
-
-            // Dejamos que el servicio haga la validación y maneje el conteo de intentos internamente
             Person loggedInUser = loginService.login(username, pass);
 
             if (loggedInUser != null) {
@@ -39,7 +35,6 @@ public class LoginView {
                 return loggedInUser;
             }
 
-            // Si el servicio retornó null, verificamos si esa última contraseña incorrecta lo bloqueó
             if (isUserBlocked(username)) {
                 return null;
             }
@@ -49,9 +44,8 @@ public class LoginView {
         }
     }
 
-    // 🛠️ CORREGIDO: Este método AHORA SOLO VERIFICA si existe, no pide contraseñas de más
     public boolean doesUserExist(String username) {
-        Person person = personRepository.findByUsername(username);
+        Person person = personRepository.findPersonaByUsername(username);
 
         if (person == null) {
             System.out.println("❌ Error: El nombre de usuario no está registrado.");
@@ -67,7 +61,7 @@ public class LoginView {
     }
 
     private boolean isUserBlocked(String username) {
-        Person person = personRepository.findByUsername(username);
+        Person person = personRepository.findPersonaByUsername(username);
         if (person != null && person.isAccountBlocked()) {
             System.out.println("🔒 Esta cuenta se encuentra bloqueada temporalmente hasta: " + person.getBlockedUntil());
             return true;
