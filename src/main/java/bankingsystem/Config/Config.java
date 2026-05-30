@@ -76,8 +76,7 @@ public class Config {
                 movimientoPersistencePort
         );
 
-        // Si tu TarjetaCreditoServiceImpl ya fue migrado para recibir TarjetaCreditoPersistencePort, compilará perfecto aquí:
-        TarjetaCreditoServices tarjetaService = new TarjetaCreditoServiceImpl(tarjetaRepo, movimientoRepo);
+        TarjetaCreditoServices tarjetaService = new TarjetaCreditoServiceImpl(tarjetaRepo, movimientoRepo, movimientoPersistencePort);
 
         personService.setCuentaService(cuentaService);
 

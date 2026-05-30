@@ -12,7 +12,7 @@ public class TarjetaCreditoRowMapper {
         String numeroTarjeta = rs.getString("numero_tarjeta");
         String propietario = rs.getString("propietario");
         double limiteCredito = rs.getDouble("limite_credito");
-        double saldoActual = rs.getDouble("saldo_actual");
+        double saldoActual = rs.getDouble("deuda_actual");
         int activa = rs.getInt("activa");
 
         TarjetaCredito tarjeta = new TarjetaCredito(numeroTarjeta, propietario, limiteCredito);

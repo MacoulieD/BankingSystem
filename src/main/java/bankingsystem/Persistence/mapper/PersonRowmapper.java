@@ -19,9 +19,6 @@ public class PersonRowmapper implements RowMapper<Person> {
         person.setEmail(rs.getString("email"));
         person.setUsername(rs.getString("userName"));
         person.setPassword(rs.getString("userpassword"));
-        person.setInitialBalance(rs.getDouble("initialBalance"));
-
-
         person.setFailedLoginAttempts(rs.getInt("failed_attempts"));
 
         java.sql.Timestamp timestamp = rs.getTimestamp("is_blocked");

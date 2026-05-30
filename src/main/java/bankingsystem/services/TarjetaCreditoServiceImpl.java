@@ -5,20 +5,23 @@ import bankingsystem.domain.TarjetaCredito;
 import bankingsystem.domain.enums.TipoMovimiento;
 import bankingsystem.Persistence.repository.MovimientoRepository;
 import bankingsystem.services.input.TarjetaCreditoServices;
-import bankingsystem.services.outputport.TarjetaCreditoPersistencePort; // ✅ Puerto importado correctamente
+import bankingsystem.services.outputport.MovimientoPersistencePort;
+import bankingsystem.services.outputport.TarjetaCreditoPersistencePort;
 
 import java.util.List;
 
 public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
 
-    // ✅ CORREGIDO: Ahora el atributo apunta directamente a la interfaz del puerto
     private final TarjetaCreditoPersistencePort tarjetaRepo;
     private final MovimientoRepository movimientoRepo;
+    private final MovimientoPersistencePort movimientoPersistencePort;
 
-    // ✅ CORREGIDO: Constructor alineado con la Arquitectura Hexagonal
-    public TarjetaCreditoServiceImpl(TarjetaCreditoPersistencePort tarjetaRepo, MovimientoRepository movimientoRepo) {
+    public TarjetaCreditoServiceImpl(TarjetaCreditoPersistencePort tarjetaRepo,
+                                     MovimientoRepository movimientoRepo,
+                                     MovimientoPersistencePort movimientoPersistencePort) {
         this.tarjetaRepo = tarjetaRepo;
         this.movimientoRepo = movimientoRepo;
+        this.movimientoPersistencePort = movimientoPersistencePort;
     }
 
     @Override
@@ -58,8 +61,8 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
         );
         tc.getMovimientos().add(movCompra);
         movimientoRepo.save(movCompra);
+        movimientoPersistencePort.saveMovimiento(tc.getNumeroCuenta(), movCompra);
 
-        // ✅ NUEVO: Sincronizamos y persistimos el cambio de estado de la tarjeta en la base de datos
         tarjetaRepo.saveTarjeta(tc);
     }
 
@@ -95,8 +98,8 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
         );
         tc.getMovimientos().add(movPago);
         movimientoRepo.save(movPago);
+        movimientoPersistencePort.saveMovimiento(tc.getNumeroCuenta(), movPago);
 
-        // ✅ NUEVO: Guardamos el estado actualizado en MySQL
         tarjetaRepo.saveTarjeta(tc);
     }
 
