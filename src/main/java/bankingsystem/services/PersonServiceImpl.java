@@ -63,36 +63,37 @@ public class PersonServiceImpl implements PersonService {
     }
 
     @Override
+    public Optional<Person> getPersonByUsername(String username) {
+        Person person = personRepository.findByUsername(username);
+        return Optional.ofNullable(person);
+    }
+
+    @Override
     public Person updatePerson(int id, String name, String telephone, String email, String username, double initialBalance, String password, String confirmPassword) {
         Optional<Person> personOpt = personRepository.findPersonaByIdOptional(id);
         if (personOpt.isPresent()) {
             Person person = personOpt.get();
             System.out.println("\n--- ACTUALIZACIÓN DE DATOS ---");
             System.out.println("\n¿Qué dato deseas modificar?");
-            System.out.println("1. Identificación 2. Nombre completo 3. Celular 4. Email 5. Nombre de usuario 6. Contraseña");
+            System.out.println("1. Nombre completo 2. Celular 3. Email 4. Nombre de usuario 5. Contraseña");
             int opcion = FormValidation.validateInt("Seleccione una opción: ");
             switch (opcion) {
                 case 1:
-                    person.setId(FormValidation.validateInt("Nueva identificación: "));
-                    personRepository.updatePerson(person);
-                    System.out.println("🎉 ¡Identificación actualizada con éxito!");
-                    break;
-                case 2:
                     person.setName(FormValidation.validateStringName("Nuevo nombre completo: "));
                     personRepository.updatePerson(person);
                     System.out.println("🎉 ¡Nombre completo actualizado con éxito!");
                     break;
-                case 3:
+                case 2:
                     person.setTelephone(FormValidation.validateintPhone("Nuevo celular: "));
                     personRepository.updatePerson(person);
                     System.out.println("🎉 ¡Número de celular actualizado con éxito!");
                     break;
-                case 4:
+                case 3:
                     person.setEmail(FormValidation.validateString("Nuevo email: "));
                     personRepository.updatePerson(person);
                     System.out.println("🎉 ¡Correo electrónico actualizado con éxito!");
                     break;
-                case 5:
+                case 4:
                     String usernameActual = person.getUsername();
                     String nuevoUsername;
 
@@ -110,12 +111,14 @@ public class PersonServiceImpl implements PersonService {
                         } else {
                             person.setUsername(nuevoUsername);
                             personRepository.updatePerson(person);
+                            // ✅ Criterio 2: actualiza cuentas con FK checks desactivados
+                            personRepository.updatePropietarioEnCuentas(usernameActual, nuevoUsername);
                             System.out.println("🎉 ¡Cambio exitoso! Tu nombre de usuario ahora es: " + nuevoUsername);
                             break;
                         }
                     }
                     break;
-                case 6:
+                case 5:
                     String passwordActual = person.getPassword();
                     String nuevaPassword;
                     String confirmacionPassword;

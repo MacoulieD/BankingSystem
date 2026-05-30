@@ -8,7 +8,8 @@ import bankingsystem.domain.enums.TypoCuenta;
 import bankingsystem.services.input.CuentaServices;
 import bankingsystem.services.outputport.CuentaAhorrosPersistencePort;
 import bankingsystem.services.outputport.CuentaCorrientePersistencePort;
-import bankingsystem.services.outputport.TarjetaCreditoPersistencePort; // ✅ CORREGIDO: Importamos el nuevo puerto
+import bankingsystem.services.outputport.TarjetaCreditoPersistencePort;
+import bankingsystem.services.outputport.MovimientoPersistencePort; // ✅ CORREGIDO: Importamos el nuevo puerto
 
 import java.util.List;
 
@@ -19,18 +20,21 @@ public class CuentaServicesImpl implements CuentaServices {
     private final CuentaCorrientePersistencePort corrienteRepo;
     private final TarjetaCreditoPersistencePort tarjetaRepo; // ✅ CORREGIDO: Usamos la interfaz del puerto
     private final MovimientoRepository movimientoRepo;
+    private final MovimientoPersistencePort movimientoPersistencePort; // ✅ Puerto de salida para BD
 
     // ✅ CORREGIDO: Constructor adaptado 100% a la Arquitectura Hexagonal y sus puertos de salida
     public CuentaServicesImpl(CuentaRepository repository,
                               CuentaAhorrosPersistencePort ahorrosRepo,
                               CuentaCorrientePersistencePort corrienteRepo,
                               TarjetaCreditoPersistencePort tarjetaRepo, // ✅ Inyección por interfaz
-                              MovimientoRepository movimientoRepo) {
+                              MovimientoRepository movimientoRepo,
+                              MovimientoPersistencePort movimientoPersistencePort) {
         this.repository = repository;
         this.ahorrosRepo = ahorrosRepo;
         this.corrienteRepo = corrienteRepo;
         this.tarjetaRepo = tarjetaRepo;
         this.movimientoRepo = movimientoRepo;
+        this.movimientoPersistencePort = movimientoPersistencePort;
     }
 
     @Override
@@ -63,13 +67,9 @@ public class CuentaServicesImpl implements CuentaServices {
                 repository.saveCuenta(corriente);
             }
             case TARJETA_CREDITO -> {
-                // Instanciamos la tarjeta con su límite de 4 millones
                 TarjetaCredito tarjeta = new TarjetaCredito(numCuenta, username, 4000000.0);
                 tarjeta.setTipo(TypoCuenta.TARJETA_CREDITO);
-
-                // Inicializamos su saldo disponible mapeado en memoria (coincide con el límite inicial)
-                tarjeta.setSaldo(4000000.0);
-
+                // saldo (deuda) empieza en 0, asignado por el constructor
                 tarjetaRepo.saveTarjeta(tarjeta);
                 repository.saveCuenta(tarjeta);
             }
@@ -91,40 +91,90 @@ public class CuentaServicesImpl implements CuentaServices {
 
     @Override
     public void consignar(String username, TypoCuenta tipo, double monto) {
-        Cuenta c = obtenerCuentaPorTipo(username, tipo);
+
+        Cuenta c = repository.findAllCuentas().stream()
+                .filter(cuenta -> cuenta.getPropietario().equalsIgnoreCase(username)
+                        && cuenta.getTipo() == tipo)
+                .findFirst()
+                .orElse(null);
+
         if (c == null) {
-            throw new RuntimeException("No se encontró la cuenta para el tipo seleccionado.");
+            throw new RuntimeException("No se encontró la cuenta activa para el tipo seleccionado.");
         }
         if (monto <= 0) {
             throw new RuntimeException("El monto a consignar debe ser mayor a cero.");
         }
+
         c.setSaldo(c.getSaldo() + monto);
 
-        Movimiento movC = new Movimiento(c.getMovimientos().size() + 1, TipoMovimiento.CONSIGNACION, monto, c.getSaldo(), String.format("Consignación: +$%,.2f", monto));
+
+        Movimiento movC = new Movimiento(
+                c.getMovimientos().size() + 1,
+                TipoMovimiento.CONSIGNACION,
+                monto,
+                c.getSaldo(),
+                String.format("Consignación: +$%,.2f", monto)
+        );
+
+
         c.getMovimientos().add(movC);
-        movimientoRepo.save(movC);
+
+
+        movimientoPersistencePort.saveMovimiento(c.getNumeroCuenta(), movC);
+
 
         actualizarPersistenciaCuenta(c);
         repository.saveCuenta(c);
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     @Override
     public void retirar(String username, TypoCuenta tipo, double monto) {
-        Cuenta c = obtenerCuentaPorTipo(username, tipo);
+
+        Cuenta c = repository.findAllCuentas().stream()
+                .filter(cuenta -> cuenta.getPropietario().equalsIgnoreCase(username)
+                        && cuenta.getTipo() == tipo)
+                .findFirst()
+                .orElse(null);
+
         if (c == null) {
-            throw new RuntimeException("No se encontró la cuenta para el tipo seleccionado.");
+            throw new RuntimeException("No se encontró la cuenta.");
         }
         if (monto <= 0) {
             throw new RuntimeException("El monto a retirar debe ser mayor a cero.");
         }
         if (c.getSaldo() < monto) {
-            throw new RuntimeException("Saldo insuficiente para realizar el retiro.");
+            throw new RuntimeException("Saldo insuficiente.");
         }
+
+
         c.setSaldo(c.getSaldo() - monto);
 
-        Movimiento movR = new Movimiento(c.getMovimientos().size() + 1, TipoMovimiento.RETIRO, monto, c.getSaldo(), String.format("Retiro: -$%,.2f", monto));
+
+        Movimiento movR = new Movimiento(
+                c.getMovimientos().size() + 1,
+                TipoMovimiento.RETIRO,
+                monto,
+                c.getSaldo(),
+                String.format("Retiro: -$%,.2f", monto)
+        );
         c.getMovimientos().add(movR);
-        movimientoRepo.save(movR);
+        movimientoPersistencePort.saveMovimiento(c.getNumeroCuenta(), movR);
+
 
         actualizarPersistenciaCuenta(c);
         repository.saveCuenta(c);
@@ -190,10 +240,12 @@ public class CuentaServicesImpl implements CuentaServices {
         Movimiento movOut = new Movimiento(origen.getMovimientos().size() + 1, TipoMovimiento.TRANSFERENCIA_OUT, monto, origen.getSaldo(), debito);
         origen.getMovimientos().add(movOut);
         movimientoRepo.save(movOut);
+        movimientoPersistencePort.saveMovimiento(origen.getNumeroCuenta(), movOut); // ✅ Persiste en BD
 
         Movimiento movIn = new Movimiento(destino.getMovimientos().size() + 1, TipoMovimiento.TRANSFERENCIA_IN, monto, destino.getSaldo(), credito);
         destino.getMovimientos().add(movIn);
         movimientoRepo.save(movIn);
+        movimientoPersistencePort.saveMovimiento(destino.getNumeroCuenta(), movIn); // ✅ Persiste en BD
 
         actualizarPersistenciaCuenta(origen);
         actualizarPersistenciaCuenta(destino);
@@ -223,5 +275,15 @@ public class CuentaServicesImpl implements CuentaServices {
     @Override
     public List<Cuenta> listarTodasLasCuentas() {
         return repository.findAllCuentas();
+    }
+
+    // ── Historia de usuario: consultar movimientos desde la BD ─────────────────
+    @Override
+    public List<Movimiento> obtenerMovimientos(String username, TypoCuenta tipo) {
+        Cuenta cuenta = obtenerCuentaPorTipo(username, tipo);
+        if (cuenta == null) {
+            throw new RuntimeException("No se encontró la cuenta de tipo " + tipo + " para el usuario.");
+        }
+        return movimientoPersistencePort.findByNumeroCuenta(cuenta.getNumeroCuenta());
     }
 }

@@ -1,6 +1,7 @@
 package bankingsystem.services.input;
 
 import bankingsystem.domain.Cuenta;
+import bankingsystem.domain.Movimiento;
 import bankingsystem.domain.enums.TypoCuenta;
 
 import java.util.List;
@@ -17,4 +18,6 @@ public interface CuentaServices {
     Cuenta obtenerCuenta(String username, TypoCuenta tipo);
     List<Cuenta> listarTodasLasCuentas();
 
+    // ── Historia de usuario: consultar movimientos desde la BD ─────────────────
+    List<Movimiento> obtenerMovimientos(String username, TypoCuenta tipo);
 }

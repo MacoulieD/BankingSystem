@@ -21,9 +21,11 @@ public class CuentaCorrienteRepositoryAdapterMySql implements CuentaCorrientePer
 
     @Override
     public CuentaCorriente saveCuentaC(CuentaCorriente cuenta) {
-        String sqlCuentas = "INSERT INTO cuentas (numero_cuenta, propietario, tipo_cuenta, saldo, estado) VALUES (?, ?, ?, ?, ?)";
-        // 🛠️ Ajustamos el INSERT para que use 'sobregiro_permitido'
-        String sqlCorriente = "INSERT INTO cuenta_corriente (numero_cuenta, propietario, saldo, sobregiro_permitido) VALUES (?, ?, ?, ?)";
+        // ON DUPLICATE KEY UPDATE → si la cuenta ya existe solo actualiza el saldo
+        String sqlCuentas  = "INSERT INTO cuentas (numero_cuenta, propietario, tipo_cuenta, saldo, estado) VALUES (?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE saldo = VALUES(saldo), estado = VALUES(estado)";
+        String sqlCorriente = "INSERT INTO cuenta_corriente (numero_cuenta, propietario, saldo, sobregiro_permitido) VALUES (?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE saldo = VALUES(saldo)";
 
         try {
             dbConnection.setAutoCommit(false);

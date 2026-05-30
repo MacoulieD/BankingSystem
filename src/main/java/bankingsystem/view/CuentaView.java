@@ -8,6 +8,8 @@ import bankingsystem.services.input.CuentaServices;
 import bankingsystem.services.input.TarjetaCreditoServices;
 import bankingsystem.utils.FormValidation;
 
+import java.util.List;
+
 
 public class CuentaView {
     private final CuentaServices cuentaServices;
@@ -27,14 +29,11 @@ public class CuentaView {
     }
 
     public void consultarEstado(String username, TypoCuenta tipo) {
-        Cuenta cuenta = cuentaServices.obtenerCuenta(username, tipo);
+        Cuenta cuenta = cuentaServices.obtenerCuentaPorTipo(username, tipo); // ✅ lee desde BD
         if (cuenta != null) {
             System.out.println("\n--- ESTADO DE CUENTA ---");
             System.out.println("Número: " + cuenta.getNumeroCuenta());
-
-
             System.out.printf("Saldo Actual: $%.2f%n", cuenta.getSaldo());
-
         } else {
             System.out.println("⚠️ No se encontró la cuenta.");
         }
@@ -47,20 +46,15 @@ public class CuentaView {
             return;
         }
 
-        // 1. En tu dominio, getSaldo() representa el cupo disponible libre en memoria
-        double disponible = tarjeta.getSaldo();
-
-        // 2. Calculamos el cupo total inyectándole ese disponible como lo exige la firma de tu clase
-        double cupoTotal = tarjeta.getCupoTotal(disponible);
-
-        // 3. Deuda Real = Lo máximo que te prestaron menos lo que te queda libre para gastar
-        double deudaActual = cupoTotal - disponible;
+        double deudaActual = tarjeta.getSaldo();
+        double cupoTotal = tarjeta.getCupoTotal(0);
+        double disponible = tarjeta.getCupoDisponible();
 
         System.out.println("\n--- ESTADO TARJETA DE CRÉDITO ---");
         System.out.println("Número: " + tarjeta.getNumeroCuenta());
-        System.out.printf("Cupo Total: $%,.2f%n", cupoTotal);
+        System.out.printf("Cupo Total:      $%,.2f%n", cupoTotal);
         System.out.printf("Cupo Disponible: $%,.2f%n", disponible);
-        System.out.printf("Deuda Actual: $%,.2f%n", deudaActual);
+        System.out.printf("Deuda Actual:    $%,.2f%n", deudaActual);
     }
 
 
@@ -127,14 +121,34 @@ public class CuentaView {
 
 
     public void verMovimientos(String username, TypoCuenta tipo) {
-        Cuenta cuenta = cuentaServices.obtenerCuenta(username, tipo);
-        if (cuenta != null && !cuenta.getMovimientos().isEmpty()) {
-            System.out.println("\n--- HISTORIAL DE MOVIMIENTOS ---");
-            for (Movimiento mov : cuenta.getMovimientos()) {
-                System.out.println("- " + mov);
+        try {
+            List<Movimiento> movimientos = cuentaServices.obtenerMovimientos(username, tipo);
+
+            // Criterio: si no hay movimientos, muestra mensaje informativo
+            if (movimientos == null || movimientos.isEmpty()) {
+                System.out.println("ℹ️ No hay movimientos registrados para esta cuenta.");
+                return;
             }
-        } else {
-            System.out.println("ℹ️ No hay movimientos registrados.");
+
+            // Criterio: muestra descripción de cada movimiento
+            System.out.println("\n╔══════════════════════════════════════════════╗");
+            System.out.println("║        HISTORIAL DE MOVIMIENTOS              ║");
+            System.out.println("╚══════════════════════════════════════════════╝");
+            String etiquetaSaldo = (tipo == TypoCuenta.TARJETA_CREDITO) ? "Cupo:  " : "Saldo:";
+            for (Movimiento mov : movimientos) {
+                System.out.printf("  [%d] %-12s | $%,14.2f | " + etiquetaSaldo + " $%,14.2f%n",
+                        mov.getId(),
+                        mov.getTipo(),
+                        mov.getValor(),
+                        mov.getSaldoPosterior());
+
+                if (mov.getDescripcion() != null && !mov.getDescripcion().isBlank()) {
+                    System.out.println("       📝 " + mov.getDescripcion());
+                }
+                System.out.println("       ─────────────────────────────────────────");
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Error al consultar movimientos: " + e.getMessage());
         }
     }
 

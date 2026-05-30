@@ -21,8 +21,11 @@ public class CuentaAhorrosRepositoryAdapterMySql implements CuentaAhorrosPersist
 
     @Override
     public CuentaAhorros saveCuentaAhorros(CuentaAhorros cuenta) {
-        String sqlCuentas = "INSERT INTO cuentas (numero_cuenta, propietario, tipo_cuenta, saldo, estado) VALUES (?, ?, ?, ?, ?)";
-        String sqlAhorros = "INSERT INTO cuenta_ahorros (numero_cuenta, propietario, saldo, tasa_interes) VALUES (?, ?, ?, ?)";
+        // ON DUPLICATE KEY UPDATE → si la cuenta ya existe solo actualiza el saldo
+        String sqlCuentas = "INSERT INTO cuentas (numero_cuenta, propietario, tipo_cuenta, saldo, estado) VALUES (?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE saldo = VALUES(saldo), estado = VALUES(estado)";
+        String sqlAhorros = "INSERT INTO cuenta_ahorros (numero_cuenta, propietario, saldo, tasa_interes) VALUES (?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE saldo = VALUES(saldo)";
 
         try {
             dbConnection.setAutoCommit(false);

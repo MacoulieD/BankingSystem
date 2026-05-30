@@ -12,15 +12,13 @@ public class TarjetaCreditoRowMapper {
         String numeroTarjeta = rs.getString("numero_tarjeta");
         String propietario = rs.getString("propietario");
         double limiteCredito = rs.getDouble("limite_credito");
-        double saldoActual = rs.getDouble("saldo_actual");
+        double saldoActual = rs.getDouble("deuda_actual");
         int activa = rs.getInt("activa");
 
-        // Instanciamos la tarjeta con su límite total
         TarjetaCredito tarjeta = new TarjetaCredito(numeroTarjeta, propietario, limiteCredito);
 
-        // ✅ CORREGIDO: Usamos el método set para asignar el cupo disponible calculado
-        double cupoDisponible = limiteCredito - saldoActual;
-        tarjeta.setSaldo(cupoDisponible);
+        // saldo = deuda actual (lo que el cliente debe)
+        tarjeta.setSaldo(saldoActual);
 
         // ✅ CORREGIDO: Mapeo seguro utilizando el Enum EstadoCuenta
         tarjeta.setEstado(activa == 1 ? EstadoCuenta.ACTIVA : EstadoCuenta.INACTIVA);
