@@ -46,20 +46,15 @@ public class CuentaView {
             return;
         }
 
-        // 1. En tu dominio, getSaldo() representa el cupo disponible libre en memoria
-        double disponible = tarjeta.getSaldo();
-
-        // 2. Calculamos el cupo total inyectándole ese disponible como lo exige la firma de tu clase
-        double cupoTotal = tarjeta.getCupoTotal(disponible);
-
-        // 3. Deuda Real = Lo máximo que te prestaron menos lo que te queda libre para gastar
-        double deudaActual = cupoTotal - disponible;
+        double deudaActual = tarjeta.getSaldo();
+        double cupoTotal = tarjeta.getCupoTotal(0);
+        double disponible = tarjeta.getCupoDisponible();
 
         System.out.println("\n--- ESTADO TARJETA DE CRÉDITO ---");
         System.out.println("Número: " + tarjeta.getNumeroCuenta());
-        System.out.printf("Cupo Total: $%,.2f%n", cupoTotal);
+        System.out.printf("Cupo Total:      $%,.2f%n", cupoTotal);
         System.out.printf("Cupo Disponible: $%,.2f%n", disponible);
-        System.out.printf("Deuda Actual: $%,.2f%n", deudaActual);
+        System.out.printf("Deuda Actual:    $%,.2f%n", deudaActual);
     }
 
 
@@ -125,13 +120,12 @@ public class CuentaView {
     }
 
 
-    // ── Historia de usuario: ver historial de movimientos desde la BD ──────────
     public void verMovimientos(String username, TypoCuenta tipo) {
         try {
             List<Movimiento> movimientos = cuentaServices.obtenerMovimientos(username, tipo);
 
             // Criterio: si no hay movimientos, muestra mensaje informativo
-            if (movimientos.isEmpty()) {
+            if (movimientos == null || movimientos.isEmpty()) {
                 System.out.println("ℹ️ No hay movimientos registrados para esta cuenta.");
                 return;
             }
@@ -141,11 +135,12 @@ public class CuentaView {
             System.out.println("║        HISTORIAL DE MOVIMIENTOS              ║");
             System.out.println("╚══════════════════════════════════════════════╝");
             for (Movimiento mov : movimientos) {
-                System.out.printf("  [%d] %-20s | $%,14.2f | Saldo: $%,14.2f%n",
+                System.out.printf("  [%d] %-12s | $%,14.2f | Saldo: $%,14.2f%n",
                         mov.getId(),
                         mov.getTipo(),
-                        mov.getValor(),
-                        mov.getSaldoPosterior());
+                        mov.getValor(),            // ✅ CORREGIDO: De getValor() a getMonto()
+                        mov.getSaldoPosterior()); // ✅ CORREGIDO: De getSaldoPosterior() a getSaldoResultante()
+
                 if (mov.getDescripcion() != null && !mov.getDescripcion().isBlank()) {
                     System.out.println("       📝 " + mov.getDescripcion());
                 }
