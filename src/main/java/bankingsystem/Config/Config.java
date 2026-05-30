@@ -33,7 +33,8 @@ public class Config {
         PersonRowmapper personRowmapper = new PersonRowmapper();
         CuentaAhorrosRowMapper cuentaAhorrosRowMapper = new CuentaAhorrosRowMapper();
         CuentaCorrienteRowMapper cuentaCorrienteRowMapper = new CuentaCorrienteRowMapper();
-        TarjetaCreditoRowMapper tarjetaCreditoRowMapper = new TarjetaCreditoRowMapper(); // ✅ Mantenemos orden de mappers
+        TarjetaCreditoRowMapper tarjetaCreditoRowMapper = new TarjetaCreditoRowMapper();
+        MovimientoRowMapper movimientoRowMapper = new MovimientoRowMapper();
 
         PersonaPersistencePort personaPersistencePort = new PersonRepository();
         PersonaPersistencePort personaPersistencePortDB = new PersonRepositoryAdapterMySql(dbConnection, personRowmapper);
@@ -41,32 +42,38 @@ public class Config {
         PersonServiceImpl personService = new PersonServiceImpl(personaPersistencePortDB, null);
         PersonView personView = new PersonView(personService);
 
-        LoginService loginService = new LoginServiceImpl(personaPersistencePortDB);
 
-        // 1. REPOSITORIOS
         PersonRepository personRepo = new PersonRepository();
         CuentaRepository cuentaGeneralRepo = new CuentaRepository();
         CuentaAhorrosPersistencePort ahorrosRepo = new CuentaAhorrosRepositoryAdapterMySql(dbConnection, cuentaAhorrosRowMapper);
         CuentaCorrientePersistencePort corrienteRepo = new CuentaCorrienteRepositoryAdapterMySql(dbConnection, cuentaCorrienteRowMapper);
 
-        // 🔥 CORREGIDO: Reemplazamos la persistencia en memoria por el adaptador MySQL mediante su puerto
+
         TarjetaCreditoPersistencePort tarjetaRepo = new TarjetaCreditoRepositoryAdapterMySql(dbConnection, tarjetaCreditoRowMapper);
 
         MovimientoRepository movimientoRepo = new MovimientoRepository();
 
-        // ✅ Adaptador MySQL para movimientos (puerto de salida → BD)
-        MovimientoRowMapper movimientoRowMapper         = new MovimientoRowMapper();
+
         MovimientoPersistencePort movimientoPersistencePort =
                 new MovimientoRepositoryAdapterMySql(dbConnection, movimientoRowMapper);
 
-        // 2. SERVICIOS
+
+
+        LoginService loginService = new LoginServiceImpl(
+                personaPersistencePortDB,
+                cuentaGeneralRepo,
+                ahorrosRepo,
+                corrienteRepo,
+                tarjetaRepo
+        );
+
         CuentaServices cuentaService = new CuentaServicesImpl(
                 cuentaGeneralRepo,
                 ahorrosRepo,
                 corrienteRepo,
-                tarjetaRepo, // ✅ Pasará limpio ya que CuentaServicesImpl ahora espera el puerto
+                tarjetaRepo,
                 movimientoRepo,
-                movimientoPersistencePort  // ✅ Inyectamos el puerto de movimientos
+                movimientoPersistencePort
         );
 
         // Si tu TarjetaCreditoServiceImpl ya fue migrado para recibir TarjetaCreditoPersistencePort, compilará perfecto aquí:

@@ -95,42 +95,90 @@ public class CuentaServicesImpl implements CuentaServices {
 
     @Override
     public void consignar(String username, TypoCuenta tipo, double monto) {
-        Cuenta c = obtenerCuentaPorTipo(username, tipo);
+
+        Cuenta c = repository.findAllCuentas().stream()
+                .filter(cuenta -> cuenta.getPropietario().equalsIgnoreCase(username)
+                        && cuenta.getTipo() == tipo)
+                .findFirst()
+                .orElse(null);
+
         if (c == null) {
-            throw new RuntimeException("No se encontró la cuenta para el tipo seleccionado.");
+            throw new RuntimeException("No se encontró la cuenta activa para el tipo seleccionado.");
         }
         if (monto <= 0) {
             throw new RuntimeException("El monto a consignar debe ser mayor a cero.");
         }
+
         c.setSaldo(c.getSaldo() + monto);
 
-        Movimiento movC = new Movimiento(c.getMovimientos().size() + 1, TipoMovimiento.CONSIGNACION, monto, c.getSaldo(), String.format("Consignación: +$%,.2f", monto));
+
+        Movimiento movC = new Movimiento(
+                c.getMovimientos().size() + 1,
+                TipoMovimiento.CONSIGNACION,
+                monto,
+                c.getSaldo(),
+                String.format("Consignación: +$%,.2f", monto)
+        );
+
+
         c.getMovimientos().add(movC);
-        movimientoRepo.save(movC);
-        movimientoPersistencePort.saveMovimiento(c.getNumeroCuenta(), movC); // ✅ Persiste en BD
+
+
+        movimientoPersistencePort.saveMovimiento(c.getNumeroCuenta(), movC);
+
 
         actualizarPersistenciaCuenta(c);
         repository.saveCuenta(c);
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     @Override
     public void retirar(String username, TypoCuenta tipo, double monto) {
-        Cuenta c = obtenerCuentaPorTipo(username, tipo);
+
+        Cuenta c = repository.findAllCuentas().stream()
+                .filter(cuenta -> cuenta.getPropietario().equalsIgnoreCase(username)
+                        && cuenta.getTipo() == tipo)
+                .findFirst()
+                .orElse(null);
+
         if (c == null) {
-            throw new RuntimeException("No se encontró la cuenta para el tipo seleccionado.");
+            throw new RuntimeException("No se encontró la cuenta.");
         }
         if (monto <= 0) {
             throw new RuntimeException("El monto a retirar debe ser mayor a cero.");
         }
         if (c.getSaldo() < monto) {
-            throw new RuntimeException("Saldo insuficiente para realizar el retiro.");
+            throw new RuntimeException("Saldo insuficiente.");
         }
+
+
         c.setSaldo(c.getSaldo() - monto);
 
-        Movimiento movR = new Movimiento(c.getMovimientos().size() + 1, TipoMovimiento.RETIRO, monto, c.getSaldo(), String.format("Retiro: -$%,.2f", monto));
+
+        Movimiento movR = new Movimiento(
+                c.getMovimientos().size() + 1,
+                TipoMovimiento.RETIRO,
+                monto,
+                c.getSaldo(),
+                String.format("Retiro: -$%,.2f", monto)
+        );
         c.getMovimientos().add(movR);
         movimientoRepo.save(movR);
-        movimientoPersistencePort.saveMovimiento(c.getNumeroCuenta(), movR); // ✅ Persiste en BD
+
 
         actualizarPersistenciaCuenta(c);
         repository.saveCuenta(c);

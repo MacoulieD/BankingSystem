@@ -8,9 +8,11 @@ import java.util.List;
 public class CuentaRepository {
     private final List<Cuenta> cuentas = new ArrayList<>();
 
-    public Cuenta saveCuenta(Cuenta cuenta) {
+    public void saveCuenta(Cuenta cuenta) {
+        // Si la cuenta ya existe en la lista, la removemos para no duplicarla
+        cuentas.removeIf(c -> c.getNumeroCuenta().equalsIgnoreCase(cuenta.getNumeroCuenta()));
+        // Agregamos la versión actualizada con el nuevo saldo
         cuentas.add(cuenta);
-        return cuenta;
     }
 
     public List<Cuenta> findAllCuentas() {

@@ -125,13 +125,12 @@ public class CuentaView {
     }
 
 
-    // ── Historia de usuario: ver historial de movimientos desde la BD ──────────
     public void verMovimientos(String username, TypoCuenta tipo) {
         try {
             List<Movimiento> movimientos = cuentaServices.obtenerMovimientos(username, tipo);
 
             // Criterio: si no hay movimientos, muestra mensaje informativo
-            if (movimientos.isEmpty()) {
+            if (movimientos == null || movimientos.isEmpty()) {
                 System.out.println("ℹ️ No hay movimientos registrados para esta cuenta.");
                 return;
             }
@@ -141,11 +140,12 @@ public class CuentaView {
             System.out.println("║        HISTORIAL DE MOVIMIENTOS              ║");
             System.out.println("╚══════════════════════════════════════════════╝");
             for (Movimiento mov : movimientos) {
-                System.out.printf("  [%d] %-20s | $%,14.2f | Saldo: $%,14.2f%n",
+                System.out.printf("  [%d] %-12s | $%,14.2f | Saldo: $%,14.2f%n",
                         mov.getId(),
                         mov.getTipo(),
-                        mov.getValor(),
-                        mov.getSaldoPosterior());
+                        mov.getValor(),            // ✅ CORREGIDO: De getValor() a getMonto()
+                        mov.getSaldoPosterior()); // ✅ CORREGIDO: De getSaldoPosterior() a getSaldoResultante()
+
                 if (mov.getDescripcion() != null && !mov.getDescripcion().isBlank()) {
                     System.out.println("       📝 " + mov.getDescripcion());
                 }
