@@ -134,12 +134,13 @@ public class CuentaView {
             System.out.println("\n╔══════════════════════════════════════════════╗");
             System.out.println("║        HISTORIAL DE MOVIMIENTOS              ║");
             System.out.println("╚══════════════════════════════════════════════╝");
+            String etiquetaSaldo = (tipo == TypoCuenta.TARJETA_CREDITO) ? "Cupo:  " : "Saldo:";
             for (Movimiento mov : movimientos) {
-                System.out.printf("  [%d] %-12s | $%,14.2f | Saldo: $%,14.2f%n",
+                System.out.printf("  [%d] %-12s | $%,14.2f | " + etiquetaSaldo + " $%,14.2f%n",
                         mov.getId(),
                         mov.getTipo(),
-                        mov.getValor(),            // ✅ CORREGIDO: De getValor() a getMonto()
-                        mov.getSaldoPosterior()); // ✅ CORREGIDO: De getSaldoPosterior() a getSaldoResultante()
+                        mov.getValor(),
+                        mov.getSaldoPosterior());
 
                 if (mov.getDescripcion() != null && !mov.getDescripcion().isBlank()) {
                     System.out.println("       📝 " + mov.getDescripcion());

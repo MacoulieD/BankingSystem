@@ -173,7 +173,7 @@ public class CuentaServicesImpl implements CuentaServices {
                 String.format("Retiro: -$%,.2f", monto)
         );
         c.getMovimientos().add(movR);
-        movimientoRepo.save(movR);
+        movimientoPersistencePort.saveMovimiento(c.getNumeroCuenta(), movR);
 
 
         actualizarPersistenciaCuenta(c);

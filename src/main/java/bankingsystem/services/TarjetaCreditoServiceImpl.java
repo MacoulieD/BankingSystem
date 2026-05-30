@@ -52,11 +52,12 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
         // Al comprar, la deuda aumenta
         tc.setSaldo(tc.getSaldo() + monto);
 
+        int nextIdCompra = movimientoPersistencePort.findByNumeroCuenta(tc.getNumeroCuenta()).size() + 1;
         Movimiento movCompra = new Movimiento(
-                tc.getMovimientos().size() + 1,
+                nextIdCompra,
                 TipoMovimiento.COMPRA_TC,
                 monto,
-                tc.getSaldo(),
+                tc.getCupoDisponible(),
                 String.format("Compra: +$%,.2f (%d cuotas de $%,.2f - %s)", monto, cuotas, valorCuota, obs)
         );
         tc.getMovimientos().add(movCompra);
@@ -89,11 +90,12 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
         // Al pagar, la deuda disminuye
         tc.setSaldo(tc.getSaldo() - monto);
 
+        int nextIdPago = movimientoPersistencePort.findByNumeroCuenta(tc.getNumeroCuenta()).size() + 1;
         Movimiento movPago = new Movimiento(
-                tc.getMovimientos().size() + 1,
+                nextIdPago,
                 TipoMovimiento.PAGO_TC,
                 monto,
-                tc.getSaldo(),
+                tc.getCupoDisponible(),
                 String.format("Pago realizado: -$%,.2f", monto)
         );
         tc.getMovimientos().add(movPago);
