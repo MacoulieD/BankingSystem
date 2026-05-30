@@ -34,13 +34,11 @@ public class TarjetaCreditoRepositoryAdapterMySql implements TarjetaCreditoPersi
 
             ps.setString(3, "123");
 
-            // ✅ CORREGIDO: Usamos getCupoTotal() de forma limpia
-            double cupoTotal = tarjeta.getCupoTotal(tarjeta.getSaldo());
+            double cupoTotal = tarjeta.getCupoTotal(0);
             ps.setDouble(4, cupoTotal);
 
-            // ✅ CORREGIDO: Saldo consumido usando getSaldo() que representa lo disponible en memoria
-            double saldoActual = cupoTotal - tarjeta.getSaldo();
-            ps.setDouble(5, saldoActual);
+            // saldo_actual en BD = deuda = getSaldo()
+            ps.setDouble(5, tarjeta.getSaldo());
 
             ps.setString(6, "12-31");
 
@@ -49,7 +47,7 @@ public class TarjetaCreditoRepositoryAdapterMySql implements TarjetaCreditoPersi
             ps.setInt(7, estadoActiva);
 
             // Parámetros para el UPDATE
-            ps.setDouble(8, saldoActual);
+            ps.setDouble(8, tarjeta.getSaldo());
             ps.setInt(9, estadoActiva);
 
             ps.executeUpdate();

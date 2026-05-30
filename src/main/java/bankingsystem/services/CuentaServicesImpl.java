@@ -67,13 +67,9 @@ public class CuentaServicesImpl implements CuentaServices {
                 repository.saveCuenta(corriente);
             }
             case TARJETA_CREDITO -> {
-                // Instanciamos la tarjeta con su límite de 4 millones
                 TarjetaCredito tarjeta = new TarjetaCredito(numCuenta, username, 4000000.0);
                 tarjeta.setTipo(TypoCuenta.TARJETA_CREDITO);
-
-                // Inicializamos su saldo disponible mapeado en memoria (coincide con el límite inicial)
-                tarjeta.setSaldo(4000000.0);
-
+                // saldo (deuda) empieza en 0, asignado por el constructor
                 tarjetaRepo.saveTarjeta(tarjeta);
                 repository.saveCuenta(tarjeta);
             }
