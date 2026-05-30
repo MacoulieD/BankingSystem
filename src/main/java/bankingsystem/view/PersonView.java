@@ -114,6 +114,24 @@ public class PersonView {
     }
 
     public Person updateLoggedPerson(String username) {
-        return null;
+        // Busca la persona en BD por username
+        Optional<Person> personOpt = personService.getPersonByUsername(username);
+        if (personOpt.isEmpty()) {
+            System.out.println("❌ No se encontró el usuario en la base de datos.");
+            return null;
+        }
+
+        Person person = personOpt.get();
+        // Delega al servicio que ya tiene el menú y la lógica de actualización
+        return personService.updatePerson(
+                person.getId(),
+                person.getName(),
+                person.getTelephone(),
+                person.getEmail(),
+                person.getUsername(),
+                person.getInitialBalance(),
+                person.getPassword(),
+                person.getPassword()
+        );
     }
 }

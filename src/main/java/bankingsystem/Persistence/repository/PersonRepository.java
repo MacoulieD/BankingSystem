@@ -80,4 +80,10 @@ public class PersonRepository implements PersonaPersistencePort {
     public void deletePersona(int id) {
         persons.removeIf(p -> p.getId() == id);
     }
+
+    // ── No aplica en memoria: las cuentas en memoria no tienen tabla propietario
+    @Override
+    public void updatePropietarioEnCuentas(String usernameAnterior, String usernameNuevo) {
+        // En memoria no hay tablas separadas de cuentas, no se requiere acción
+    }
 }

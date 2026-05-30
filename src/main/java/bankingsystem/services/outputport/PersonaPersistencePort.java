@@ -27,5 +27,8 @@ public interface PersonaPersistencePort {
 
     Person updatePerson(Person person);
 
+    // ── Criterio 2: propaga el nuevo username a todas las cuentas del cliente ──
+    void updatePropietarioEnCuentas(String usernameAnterior, String usernameNuevo);
+
     void deletePersona(int id);
 }

@@ -111,25 +111,86 @@ public class PersonRepositoryAdapterMySql implements PersonaPersistencePort {
 
     @Override
     public Person updatePerson(Person person) {
+        // Busca el username actual en BD para detectar si cambió
+        String usernameActualEnBD = null;
+        try {
+            Optional<Person> actual = findPersonaByIdOptional(person.getId());
+            if (actual.isPresent()) {
+                usernameActualEnBD = actual.get().getUsername();
+            }
+        } catch (Exception ignored) {}
+
+        boolean usernameChanged = usernameActualEnBD != null
+                && !usernameActualEnBD.equalsIgnoreCase(person.getUsername());
+
         String sql = """
                 UPDATE person
                 SET id_person = ?, name = ?, telephone = ?, email = ?, userName = ?, userpassword = ?, failed_attempts = ?, is_blocked = ?
                 WHERE id_person = ?""";
-        try (PreparedStatement ps = dbconnection.prepareStatement(sql)) {
-            setPersonParams(ps, person);
-            ps.setInt(7, person.getFailedLoginAttempts());
-            if (person.getBlockedUntil() != null) {
-                ps.setTimestamp(8, java.sql.Timestamp.valueOf(person.getBlockedUntil()));
-            } else {
-                ps.setTimestamp(8, null);
+        try {
+            // ✅ Si el username cambia, desactiva FK para evitar constraint violation
+            if (usernameChanged) {
+                dbconnection.createStatement().execute("SET FOREIGN_KEY_CHECKS = 0");
             }
-            ps.setInt(9, person.getId());
-            ps.executeUpdate();
+
+            try (PreparedStatement ps = dbconnection.prepareStatement(sql)) {
+                setPersonParams(ps, person);
+                ps.setInt(7, person.getFailedLoginAttempts());
+                if (person.getBlockedUntil() != null) {
+                    ps.setTimestamp(8, java.sql.Timestamp.valueOf(person.getBlockedUntil()));
+                } else {
+                    ps.setTimestamp(8, null);
+                }
+                ps.setInt(9, person.getId());
+                ps.executeUpdate();
+            }
+
+            // ✅ Actualiza propietario en todas las tablas de cuentas
+            if (usernameChanged) {
+                String[] tablas = {"cuentas", "cuenta_ahorros", "cuenta_corriente", "tarjetas_credito"};
+                for (String tabla : tablas) {
+                    String sqlCuenta = "UPDATE " + tabla + " SET propietario = ? WHERE propietario = ?";
+                    try (PreparedStatement ps = dbconnection.prepareStatement(sqlCuenta)) {
+                        ps.setString(1, person.getUsername().trim().toLowerCase());
+                        ps.setString(2, usernameActualEnBD.trim().toLowerCase());
+                        ps.executeUpdate();
+                    }
+                }
+                dbconnection.createStatement().execute("SET FOREIGN_KEY_CHECKS = 1");
+            }
+
             System.out.println("✅ ¡Usuario actualizado correctamente!");
         } catch (SQLException e) {
+            try { dbconnection.createStatement().execute("SET FOREIGN_KEY_CHECKS = 1"); } catch (SQLException ignored) {}
             throw new RuntimeException("Error al actualizar la persona: " + e.getMessage(), e);
         }
         return person;
+    }
+
+    // ── Criterio 2: actualiza propietario en todas las tablas de cuentas ──────
+    @Override
+    public void updatePropietarioEnCuentas(String usernameAnterior, String usernameNuevo) {
+        try {
+            // 1. Desactiva FK temporalmente para poder actualizar sin conflicto
+            dbconnection.createStatement().execute("SET FOREIGN_KEY_CHECKS = 0");
+
+            String[] tablas = {"cuentas", "cuenta_ahorros", "cuenta_corriente", "tarjetas_credito"};
+            for (String tabla : tablas) {
+                String sql = "UPDATE " + tabla + " SET propietario = ? WHERE propietario = ?";
+                try (PreparedStatement ps = dbconnection.prepareStatement(sql)) {
+                    ps.setString(1, usernameNuevo.trim().toLowerCase());
+                    ps.setString(2, usernameAnterior.trim().toLowerCase());
+                    ps.executeUpdate();
+                }
+            }
+
+            // 2. Reactiva FK checks
+            dbconnection.createStatement().execute("SET FOREIGN_KEY_CHECKS = 1");
+
+        } catch (SQLException e) {
+            try { dbconnection.createStatement().execute("SET FOREIGN_KEY_CHECKS = 1"); } catch (SQLException ignored) {}
+            throw new RuntimeException("Error al actualizar propietario en cuentas: " + e.getMessage(), e);
+        }
     }
 
     @Override
