@@ -1,22 +1,14 @@
 package bankingsystem.Config;
 
 import bankingsystem.Persistence.database.DataBaseConnectionMySql;
-import bankingsystem.Persistence.mapper.PersonRowmapper;
-import bankingsystem.Persistence.mapper.CuentaAhorrosRowMapper;
-import bankingsystem.Persistence.mapper.CuentaCorrienteRowMapper;
-import bankingsystem.Persistence.mapper.TarjetaCreditoRowMapper; // ✅ INTERCAMBIO/ADICIÓN: Nuevo Mapper
-import bankingsystem.Persistence.mapper.MovimientoRowMapper;     // ✅ Mapper movimientos
+import bankingsystem.Persistence.mapper.*;
 import bankingsystem.Persistence.repository.*;
 import bankingsystem.services.*;
 import bankingsystem.services.input.CuentaServices;
 import bankingsystem.services.input.LoginService;
 import bankingsystem.services.input.PersonService;
 import bankingsystem.services.input.TarjetaCreditoServices;
-import bankingsystem.services.outputport.PersonaPersistencePort;
-import bankingsystem.services.outputport.CuentaAhorrosPersistencePort;
-import bankingsystem.services.outputport.CuentaCorrientePersistencePort;
-import bankingsystem.services.outputport.TarjetaCreditoPersistencePort; // ✅ INTERCAMBIO/ADICIÓN: Nuevo Puerto
-import bankingsystem.services.outputport.MovimientoPersistencePort;     // ✅ Puerto movimientos BD
+import bankingsystem.services.outputport.*;
 import bankingsystem.view.CuentaView;
 import bankingsystem.view.LoginView;
 import bankingsystem.view.PersonView;
@@ -28,45 +20,28 @@ public class Config {
 
     public static MenuApp createMenuApp() {
 
+        // 1. CONEXIÓN
         Connection dbConnection = DataBaseConnectionMySql.getInstance().getConnection();
 
-        PersonRowmapper personRowmapper = new PersonRowmapper();
-        CuentaAhorrosRowMapper cuentaAhorrosRowMapper = new CuentaAhorrosRowMapper();
-        CuentaCorrienteRowMapper cuentaCorrienteRowMapper = new CuentaCorrienteRowMapper();
-        TarjetaCreditoRowMapper tarjetaCreditoRowMapper = new TarjetaCreditoRowMapper();
-        MovimientoRowMapper movimientoRowMapper = new MovimientoRowMapper();
+        // 2. MAPPERS
+        PersonRowmapper          personRowmapper      = new PersonRowmapper();
+        CuentaAhorrosRowMapper   ahorrosRowMapper     = new CuentaAhorrosRowMapper();
+        CuentaCorrienteRowMapper corrienteRowMapper   = new CuentaCorrienteRowMapper();
+        TarjetaCreditoRowMapper  tarjetaRowMapper     = new TarjetaCreditoRowMapper();
+        MovimientoRowMapper      movimientoRowMapper  = new MovimientoRowMapper();
 
-        PersonaPersistencePort personaPersistencePort = new PersonRepository();
-        PersonaPersistencePort personaPersistencePortDB = new PersonRepositoryAdapterMySql(dbConnection, personRowmapper);
+        // 3. REPOSITORIOS — todos en MySQL
+        PersonaPersistencePort         personaRepo           = new PersonRepositoryAdapterMySql(dbConnection, personRowmapper);
+        CuentaAhorrosPersistencePort   ahorrosRepo           = new CuentaAhorrosRepositoryAdapterMySql(dbConnection, ahorrosRowMapper);
+        CuentaCorrientePersistencePort corrienteRepo         = new CuentaCorrienteRepositoryAdapterMySql(dbConnection, corrienteRowMapper);
+        TarjetaCreditoPersistencePort  tarjetaRepo           = new TarjetaCreditoRepositoryAdapterMySql(dbConnection, tarjetaRowMapper);
+        MovimientoPersistencePort      movimientoPersistencePort = new MovimientoRepositoryAdapterMySql(dbConnection, movimientoRowMapper);
 
-        PersonServiceImpl personService = new PersonServiceImpl(personaPersistencePortDB, null);
-        PersonView personView = new PersonView(personService);
+        // 4. Repositorio en memoria para búsquedas generales + lista en memoria para movimientos
+        CuentaRepository    cuentaGeneralRepo = new CuentaRepository();
+        MovimientoRepository movimientoRepo   = new MovimientoRepository();
 
-
-        PersonRepository personRepo = new PersonRepository();
-        CuentaRepository cuentaGeneralRepo = new CuentaRepository();
-        CuentaAhorrosPersistencePort ahorrosRepo = new CuentaAhorrosRepositoryAdapterMySql(dbConnection, cuentaAhorrosRowMapper);
-        CuentaCorrientePersistencePort corrienteRepo = new CuentaCorrienteRepositoryAdapterMySql(dbConnection, cuentaCorrienteRowMapper);
-
-
-        TarjetaCreditoPersistencePort tarjetaRepo = new TarjetaCreditoRepositoryAdapterMySql(dbConnection, tarjetaCreditoRowMapper);
-
-        MovimientoRepository movimientoRepo = new MovimientoRepository();
-
-
-        MovimientoPersistencePort movimientoPersistencePort =
-                new MovimientoRepositoryAdapterMySql(dbConnection, movimientoRowMapper);
-
-
-
-        LoginService loginService = new LoginServiceImpl(
-                personaPersistencePortDB,
-                cuentaGeneralRepo,
-                ahorrosRepo,
-                corrienteRepo,
-                tarjetaRepo
-        );
-
+        // 5. SERVICIOS
         CuentaServices cuentaService = new CuentaServicesImpl(
                 cuentaGeneralRepo,
                 ahorrosRepo,
@@ -76,12 +51,13 @@ public class Config {
                 movimientoPersistencePort
         );
 
-        TarjetaCreditoServices tarjetaService = new TarjetaCreditoServiceImpl(tarjetaRepo, movimientoRepo, movimientoPersistencePort);
+        PersonService          personService  = new PersonServiceImpl(personaRepo, cuentaService);
+        LoginService           loginService   = new LoginServiceImpl(personaRepo);
+        TarjetaCreditoServices tarjetaService = new TarjetaCreditoServiceImpl(tarjetaRepo, movimientoRepo);
 
-        personService.setCuentaService(cuentaService);
-
-        LoginView loginView = new LoginView(loginService, personaPersistencePortDB);
-
+        // 6. VISTAS
+        PersonView personView = new PersonView(personService);
+        LoginView  loginView  = new LoginView(loginService, personaRepo);
         CuentaView cuentaView = new CuentaView(cuentaService, tarjetaService);
 
         return new MenuApp(personView, loginView, cuentaView, cuentaService);
