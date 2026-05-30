@@ -23,11 +23,11 @@ public class PersonRepositoryAdapterMySql implements PersonaPersistencePort {
 
     @Override
     public Person savePersona(Person person) {
-        String sql = "INSERT INTO person (id_person, name, telephone, email, userName, initialBalance, userpassword, is_blocked, failed_attempts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO person (id_person, name, telephone, email, userName, userpassword, is_blocked, failed_attempts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = dbconnection.prepareStatement(sql)) {
             setPersonParams(ps, person);
-            ps.setTimestamp(8, null);
-            ps.setInt(9, 0);
+            ps.setTimestamp(7, null);
+            ps.setInt(8, 0);
             ps.executeUpdate();
             System.out.println("✅ ¡Usuario registrado exitosamente!");
         } catch (SQLException e) {
@@ -39,7 +39,7 @@ public class PersonRepositoryAdapterMySql implements PersonaPersistencePort {
     @Override
     public List<Person> findAllPersonas() {
         List<Person> persons = new ArrayList<>();
-        String sql = "SELECT id_person, name, telephone, email, userName, userpassword, initialBalance, is_blocked, failed_attempts FROM person";
+        String sql = "SELECT id_person, name, telephone, email, userName, userpassword, is_blocked, failed_attempts FROM person";
         try (PreparedStatement ps = dbconnection.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -54,7 +54,7 @@ public class PersonRepositoryAdapterMySql implements PersonaPersistencePort {
 
     @Override
     public Optional<Person> findPersonaByIdOptional(int id) {
-        String sql = "SELECT id_person, name, telephone, email, userName, userpassword, initialBalance, is_blocked, failed_attempts FROM person WHERE id_person = ?";
+        String sql = "SELECT id_person, name, telephone, email, userName, userpassword, is_blocked, failed_attempts FROM person WHERE id_person = ?";
         try (PreparedStatement ps = dbconnection.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -81,7 +81,7 @@ public class PersonRepositoryAdapterMySql implements PersonaPersistencePort {
 
     @Override
     public Person findByUsername(String username) {
-        String sql = "SELECT id_person, name, telephone, email, userName, userpassword, initialBalance, is_blocked, failed_attempts FROM person WHERE LOWER(TRIM(userName)) = LOWER(TRIM(?))";
+        String sql = "SELECT id_person, name, telephone, email, userName, userpassword, is_blocked, failed_attempts FROM person WHERE LOWER(TRIM(userName)) = LOWER(TRIM(?))";
         try (PreparedStatement ps = dbconnection.prepareStatement(sql)) {
             ps.setString(1, username.trim());
             try (ResultSet rs = ps.executeQuery()) {
@@ -113,17 +113,17 @@ public class PersonRepositoryAdapterMySql implements PersonaPersistencePort {
     public Person updatePerson(Person person) {
         String sql = """
                 UPDATE person
-                SET id_person = ?, name = ?, telephone = ?, email = ?, userName = ?, initialBalance = ?, userpassword = ?, failed_attempts = ?, is_blocked = ?
+                SET id_person = ?, name = ?, telephone = ?, email = ?, userName = ?, userpassword = ?, failed_attempts = ?, is_blocked = ?
                 WHERE id_person = ?""";
         try (PreparedStatement ps = dbconnection.prepareStatement(sql)) {
             setPersonParams(ps, person);
-            ps.setInt(8, person.getFailedLoginAttempts());
+            ps.setInt(7, person.getFailedLoginAttempts());
             if (person.getBlockedUntil() != null) {
-                ps.setTimestamp(9, java.sql.Timestamp.valueOf(person.getBlockedUntil()));
+                ps.setTimestamp(8, java.sql.Timestamp.valueOf(person.getBlockedUntil()));
             } else {
-                ps.setTimestamp(9, null);
+                ps.setTimestamp(8, null);
             }
-            ps.setInt(10, person.getId());
+            ps.setInt(9, person.getId());
             ps.executeUpdate();
             System.out.println("✅ ¡Usuario actualizado correctamente!");
         } catch (SQLException e) {
@@ -149,7 +149,6 @@ public class PersonRepositoryAdapterMySql implements PersonaPersistencePort {
         ps.setString(3, person.getTelephone().trim());
         ps.setString(4, person.getEmail().trim());
         ps.setString(5, person.getUsername().trim().toLowerCase());
-        ps.setDouble(6, person.getInitialBalance());
-        ps.setString(7, person.getPassword().trim());
+        ps.setString(6, person.getPassword().trim());
     }
 }
