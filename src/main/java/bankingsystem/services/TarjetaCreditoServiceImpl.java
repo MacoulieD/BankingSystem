@@ -39,15 +39,15 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
             throw new RuntimeException("El número de cuotas debe ser mayor a cero.");
         }
 
-        if (tc.getSaldo() < monto) { // Nota: Recuerda que 'getSaldo()' en tu dominio maneja el cupo disponible libre en memoria
-            throw new RuntimeException("Cupo insuficiente. Disponible: $" + tc.getSaldo());
+        if (tc.getCupoDisponible() < monto) {
+            throw new RuntimeException("Cupo insuficiente. Disponible: $" + tc.getCupoDisponible());
         }
 
         double valorCuota = tc.calcularCuotaMensual(monto, cuotas);
         String obs = tc.getObservacionInteres(cuotas);
 
-        // Al comprar, disminuye el saldo disponible en memoria
-        tc.setSaldo(tc.getSaldo() - monto);
+        // Al comprar, la deuda aumenta
+        tc.setSaldo(tc.getSaldo() + monto);
 
         Movimiento movCompra = new Movimiento(
                 tc.getMovimientos().size() + 1,
@@ -77,16 +77,14 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
             throw new RuntimeException("El monto de pago debe ser mayor a cero.");
         }
 
-        // Calculamos la deuda real basándonos en la firma de tu entidad
-        double cupoTotal = tc.getCupoTotal(tc.getSaldo());
-        double deudaActual = cupoTotal - tc.getSaldo();
+        double deudaActual = tc.getSaldo();
 
         if (monto > deudaActual) {
             throw new RuntimeException("El pago excede la deuda actual ($" + deudaActual + ")");
         }
 
-        // Al pagar, recuperamos espacio en el saldo disponible en memoria
-        tc.setSaldo(tc.getSaldo() + monto);
+        // Al pagar, la deuda disminuye
+        tc.setSaldo(tc.getSaldo() - monto);
 
         Movimiento movPago = new Movimiento(
                 tc.getMovimientos().size() + 1,

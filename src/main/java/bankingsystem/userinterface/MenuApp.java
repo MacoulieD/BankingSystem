@@ -210,14 +210,9 @@ public class MenuApp {
         } else {
             for (Cuenta c : misCuentas) {
                 if (c instanceof TarjetaCredito tc) {
-                    // 1. El cupo disponible real en tu dominio está guardado en el método getSaldo()
-                    double disponible = tc.getSaldo();
-
-                    // 2. Calculamos el cupo total pasándole el disponible como exige la firma de tu entidad
-                    double cupoTotal = tc.getCupoTotal(disponible);
-
-                    // 3. Deuda Total = Límite otorgado - Dinero que te queda libre
-                    double deudaTotal = cupoTotal - disponible;
+                    double deudaTotal = tc.getSaldo();
+                    double cupoTotal = tc.getCupoTotal(0);
+                    double disponible = tc.getCupoDisponible();
 
                     System.out.printf("- [%s No: %s | Cupo Total: $%,.2f | Cupo Disponible: $%,.2f | Deuda Total: $%,.2f]%n",
                             c.getTipo(),

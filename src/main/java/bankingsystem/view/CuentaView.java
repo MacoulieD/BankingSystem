@@ -46,20 +46,15 @@ public class CuentaView {
             return;
         }
 
-        // 1. En tu dominio, getSaldo() representa el cupo disponible libre en memoria
-        double disponible = tarjeta.getSaldo();
-
-        // 2. Calculamos el cupo total inyectándole ese disponible como lo exige la firma de tu clase
-        double cupoTotal = tarjeta.getCupoTotal(disponible);
-
-        // 3. Deuda Real = Lo máximo que te prestaron menos lo que te queda libre para gastar
-        double deudaActual = cupoTotal - disponible;
+        double deudaActual = tarjeta.getSaldo();
+        double cupoTotal = tarjeta.getCupoTotal(0);
+        double disponible = tarjeta.getCupoDisponible();
 
         System.out.println("\n--- ESTADO TARJETA DE CRÉDITO ---");
         System.out.println("Número: " + tarjeta.getNumeroCuenta());
-        System.out.printf("Cupo Total: $%,.2f%n", cupoTotal);
+        System.out.printf("Cupo Total:      $%,.2f%n", cupoTotal);
         System.out.printf("Cupo Disponible: $%,.2f%n", disponible);
-        System.out.printf("Deuda Actual: $%,.2f%n", deudaActual);
+        System.out.printf("Deuda Actual:    $%,.2f%n", deudaActual);
     }
 
 
