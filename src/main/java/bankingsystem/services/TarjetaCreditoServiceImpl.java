@@ -5,20 +5,23 @@ import bankingsystem.domain.TarjetaCredito;
 import bankingsystem.domain.enums.TipoMovimiento;
 import bankingsystem.Persistence.repository.MovimientoRepository;
 import bankingsystem.services.input.TarjetaCreditoServices;
-import bankingsystem.services.outputport.TarjetaCreditoPersistencePort; // ✅ Puerto importado correctamente
+import bankingsystem.services.outputport.MovimientoPersistencePort;
+import bankingsystem.services.outputport.TarjetaCreditoPersistencePort;
 
 import java.util.List;
 
 public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
 
-    // ✅ CORREGIDO: Ahora el atributo apunta directamente a la interfaz del puerto
     private final TarjetaCreditoPersistencePort tarjetaRepo;
     private final MovimientoRepository movimientoRepo;
+    private final MovimientoPersistencePort movimientoPersistencePort;
 
-    // ✅ CORREGIDO: Constructor alineado con la Arquitectura Hexagonal
-    public TarjetaCreditoServiceImpl(TarjetaCreditoPersistencePort tarjetaRepo, MovimientoRepository movimientoRepo) {
+    public TarjetaCreditoServiceImpl(TarjetaCreditoPersistencePort tarjetaRepo,
+                                     MovimientoRepository movimientoRepo,
+                                     MovimientoPersistencePort movimientoPersistencePort) {
         this.tarjetaRepo = tarjetaRepo;
         this.movimientoRepo = movimientoRepo;
+        this.movimientoPersistencePort = movimientoPersistencePort;
     }
 
     @Override
@@ -39,15 +42,15 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
             throw new RuntimeException("El número de cuotas debe ser mayor a cero.");
         }
 
-        if (tc.getSaldo() < monto) { // Nota: Recuerda que 'getSaldo()' en tu dominio maneja el cupo disponible libre en memoria
-            throw new RuntimeException("Cupo insuficiente. Disponible: $" + tc.getSaldo());
+        if (tc.getCupoDisponible() < monto) {
+            throw new RuntimeException("Cupo insuficiente. Disponible: $" + tc.getCupoDisponible());
         }
 
         double valorCuota = tc.calcularCuotaMensual(monto, cuotas);
         String obs = tc.getObservacionInteres(cuotas);
 
-        // Al comprar, disminuye el saldo disponible en memoria
-        tc.setSaldo(tc.getSaldo() - monto);
+        // Al comprar, la deuda aumenta
+        tc.setSaldo(tc.getSaldo() + monto);
 
         Movimiento movCompra = new Movimiento(
                 tc.getMovimientos().size() + 1,
@@ -58,8 +61,8 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
         );
         tc.getMovimientos().add(movCompra);
         movimientoRepo.save(movCompra);
+        movimientoPersistencePort.saveMovimiento(tc.getNumeroCuenta(), movCompra);
 
-        // ✅ NUEVO: Sincronizamos y persistimos el cambio de estado de la tarjeta en la base de datos
         tarjetaRepo.saveTarjeta(tc);
     }
 
@@ -77,16 +80,14 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
             throw new RuntimeException("El monto de pago debe ser mayor a cero.");
         }
 
-        // Calculamos la deuda real basándonos en la firma de tu entidad
-        double cupoTotal = tc.getCupoTotal(tc.getSaldo());
-        double deudaActual = cupoTotal - tc.getSaldo();
+        double deudaActual = tc.getSaldo();
 
         if (monto > deudaActual) {
             throw new RuntimeException("El pago excede la deuda actual ($" + deudaActual + ")");
         }
 
-        // Al pagar, recuperamos espacio en el saldo disponible en memoria
-        tc.setSaldo(tc.getSaldo() + monto);
+        // Al pagar, la deuda disminuye
+        tc.setSaldo(tc.getSaldo() - monto);
 
         Movimiento movPago = new Movimiento(
                 tc.getMovimientos().size() + 1,
@@ -97,8 +98,8 @@ public class TarjetaCreditoServiceImpl implements TarjetaCreditoServices {
         );
         tc.getMovimientos().add(movPago);
         movimientoRepo.save(movPago);
+        movimientoPersistencePort.saveMovimiento(tc.getNumeroCuenta(), movPago);
 
-        // ✅ NUEVO: Guardamos el estado actualizado en MySQL
         tarjetaRepo.saveTarjeta(tc);
     }
 

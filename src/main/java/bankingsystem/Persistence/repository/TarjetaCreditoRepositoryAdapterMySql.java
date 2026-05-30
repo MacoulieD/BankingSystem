@@ -23,43 +23,48 @@ public class TarjetaCreditoRepositoryAdapterMySql implements TarjetaCreditoPersi
 
     @Override
     public TarjetaCredito saveTarjeta(TarjetaCredito tarjeta) {
-        String sql = "INSERT INTO tarjetas_credito (numero_tarjeta, propietario, cvv, limite_credito, saldo_actual, fecha_vencimiento, activa) " +
+        String sqlCuentas = "INSERT INTO cuentas (numero_cuenta, propietario, tipo_cuenta, saldo, estado) VALUES (?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE saldo = VALUES(saldo), estado = VALUES(estado)";
+        String sqlTarjeta = "INSERT INTO tarjetas_credito (numero_tarjeta, propietario, cvv, limite_credito, deuda_actual, fecha_vencimiento, activa) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?) " +
-                "ON DUPLICATE KEY UPDATE saldo_actual = ?, activa = ?";
+                "ON DUPLICATE KEY UPDATE deuda_actual = VALUES(deuda_actual), activa = VALUES(activa)";
 
-        try (PreparedStatement ps = dbConnection.prepareStatement(sql)) {
-            // ✅ CORREGIDO: Cambiado a getNumeroCuenta() según la estructura de tu entidad
-            ps.setString(1, tarjeta.getNumeroCuenta());
-            ps.setString(2, tarjeta.getPropietario());
+        double cupoTotal = tarjeta.getCupoTotal(0);
+        double deuda = tarjeta.getSaldo();
+        String estado = tarjeta.getEstado() != null ? tarjeta.getEstado().name() : "ACTIVA";
+        int activa = estado.equalsIgnoreCase("ACTIVA") ? 1 : 0;
 
-            ps.setString(3, "123");
+        try {
+            dbConnection.setAutoCommit(false);
 
-            // ✅ CORREGIDO: Usamos getCupoTotal() de forma limpia
-            double cupoTotal = tarjeta.getCupoTotal(tarjeta.getSaldo());
-            ps.setDouble(4, cupoTotal);
+            try (PreparedStatement ps = dbConnection.prepareStatement(sqlCuentas)) {
+                ps.setString(1, tarjeta.getNumeroCuenta());
+                ps.setString(2, tarjeta.getPropietario());
+                ps.setString(3, "TARJETA_CREDITO");
+                ps.setDouble(4, deuda);
+                ps.setString(5, estado);
+                ps.executeUpdate();
+            }
 
-            // ✅ CORREGIDO: Saldo consumido usando getSaldo() que representa lo disponible en memoria
-            double saldoActual = cupoTotal - tarjeta.getSaldo();
-            ps.setDouble(5, saldoActual);
+            try (PreparedStatement ps = dbConnection.prepareStatement(sqlTarjeta)) {
+                ps.setString(1, tarjeta.getNumeroCuenta());
+                ps.setString(2, tarjeta.getPropietario());
+                ps.setString(3, "123");
+                ps.setDouble(4, cupoTotal);
+                ps.setDouble(5, deuda);
+                ps.setString(6, "12-31");
+                ps.setInt(7, activa);
+                ps.executeUpdate();
+            }
 
-            ps.setString(6, "12-31");
-
-            // ✅ CORREGIDO: Manejo correcto extrayendo el name() del Enum EstadoCuenta
-            int estadoActiva = (tarjeta.getEstado() != null && tarjeta.getEstado().name().equalsIgnoreCase("ACTIVA")) ? 1 : 0;
-            ps.setInt(7, estadoActiva);
-
-            // Parámetros para el UPDATE
-            ps.setDouble(8, saldoActual);
-            ps.setInt(9, estadoActiva);
-
-            ps.executeUpdate();
-
-            // ✅ CORREGIDO: Cambiado también en el print del sistema
-            System.out.println("✅ Tarjeta de Crédito guardada/actualizada en MySQL: " + tarjeta.getNumeroCuenta());
+            dbConnection.commit();
             return tarjeta;
 
         } catch (SQLException e) {
+            try { dbConnection.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
             throw new RuntimeException("Error al persistir la tarjeta de crédito: " + e.getMessage(), e);
+        } finally {
+            try { dbConnection.setAutoCommit(true); } catch (SQLException e) { e.printStackTrace(); }
         }
     }
 
