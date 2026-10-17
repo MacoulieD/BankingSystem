@@ -120,4 +120,22 @@ public abstract class MCuenta {
     public void setPersona(MPerson persona) {
         this.persona = persona;
     }
+
+    //Encapsulamiento de las relaciones
+
+    public List<MMovimiento> getMovimientos() {
+        return movimientos;
+    }
+
+    public void setMovimientos(List<MMovimiento> movimientos) {
+        this.movimientos = movimientos;
+    }
+
+    public List<MTarjetaCredito> getTarjetaCreditos() {
+        return tarjetaCreditos;
+    }
+
+    public void setTarjetaCreditos(List<MTarjetaCredito> tarjetaCreditos) {
+        this.tarjetaCreditos = tarjetaCreditos;
+    }
 }

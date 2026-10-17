@@ -15,4 +15,10 @@ public interface IMovimiento extends JpaRepository<MMovimiento,Integer> {
     List<MMovimiento> findByFecha (LocalDateTime Fecha);
     // busqueda por numero de cuenta: para ver el extracto/historial de una cuenta
     List<MMovimiento> findByNumerocuenta (String Numerocuenta);
+
+    // historial de una cuenta por su id, del mas reciente al mas antiguo
+    List<MMovimiento> findByCuenta_IdOrderByFechaDesc (int Idcuenta);
+
+    // movimientos entre dos fechas (ej. extracto de un mes)
+    List<MMovimiento> findByFechaBetween (LocalDateTime Desde, LocalDateTime Hasta);
 }

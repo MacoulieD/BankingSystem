@@ -1,5 +1,5 @@
 -- Ajusta las tablas de dbbankingsystem a las entidades corregidas (MPerson,
--- MCuenta, MMovimiento) para que coincidan con el formulario de registro.
+-- MCuenta, MMovimiento, MTarjetaCredito) para que coincidan con el formulario de registro.
 -- No borra tablas ni datos: solo modifica columnas.
 -- Ejecutar UNA vez en phpMyAdmin (pestana SQL) con dbbankingsystem seleccionada,
 -- y ANTES de arrancar el backend.
@@ -27,5 +27,10 @@ ALTER TABLE cuenta
 
 ALTER TABLE movimientos
   MODIFY id INT(11) NOT NULL AUTO_INCREMENT;
+
+-- la tarjeta de credito tambien genera su id solo (@GeneratedValue en MTarjetaCredito)
+ALTER TABLE targeta_credito
+  MODIFY id INT(11) NOT NULL AUTO_INCREMENT,
+  ADD CONSTRAINT uk_tarjeta_numerotarjeta UNIQUE (numerotarjeta);
 
 SET FOREIGN_KEY_CHECKS = 1;
