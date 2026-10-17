@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.Cesde.BankingSystem.Mapper.MapperUtils.texto;
@@ -248,14 +249,79 @@ public class SPerson {
         return new ResponseStatusException(estado, mensaje);
     }
 
-    // Pendiente por implementar (misma lista de operaciones que maneja SCliente
-    // en el proyecto concesionario, aplicada a Person):
-    // Modificar un registro de persona
-    // Eliminar un registro de persona
-    // consulta general
-    // Consulta persona por nombre
-    // Consultar las cuentas de una persona
-    // Consulta por llave primaria
-    // Anular un registro persona
+    // =====================  CRUD Y CONSULTAS DE PERSONA  =====================
+    // (lo que estaba pendiente: misma lista de operaciones de SCliente en el
+    // proyecto concesionario, aplicada a Person)
 
+    // Consulta general
+    public List<MPerson> listarPersonas() {
+        return iPerson.findAll();
+    }
+
+    // Consulta por llave primaria
+    public MPerson buscarPersonaPorId(int id) {
+        return iPerson.findById(id)
+                .orElseThrow(() -> error(HttpStatus.NOT_FOUND, "No existe una persona con id " + id + "."));
+    }
+
+    // Consulta persona por nombre (puede haber varias con el mismo nombre)
+    public List<MPerson> buscarPersonasPorNombre(String nombre) {
+        return iPerson.findByName(texto(nombre).replaceAll("\\s+", " "));
+    }
+
+    // Consultar las cuentas de una persona
+    public List<MCuenta> listarCuentasDePersona(int id) {
+        buscarPersonaPorId(id);
+        return iCuenta.findByPersona_Idperson(id);
+    }
+
+    // Modificar un registro de persona: nombre, telefono y correo.
+    // Documento, usuario y clave no se cambian aqui (la clave tiene su propio
+    // metodo, cambiarClave, que exige la clave actual).
+    public MPerson modificarPersona(int id, MPerson datos) {
+        MPerson persona = buscarPersonaPorId(id);
+        if (datos.getName() != null && !datos.getName().isBlank()) {
+            persona.setName(texto(datos.getName()).replaceAll("\\s+", " "));
+        }
+        if (datos.getTelephone() != null) {
+            String telefono = texto(datos.getTelephone());
+            validarTelefono(telefono);
+            persona.setTelephone(telefono);
+        }
+        if (datos.getEmail() != null) {
+            String email = texto(datos.getEmail()).toLowerCase();
+            validarEmail(email);
+            if (iPerson.existsByEmailAndIdpersonNot(email, id)) {
+                throw error(HttpStatus.CONFLICT, "Ese correo electrónico ya está registrado por otro usuario.");
+            }
+            persona.setEmail(email);
+        }
+        return iPerson.save(persona);
+    }
+
+    // Anular un registro de persona (eliminacion logica): queda inactiva y no
+    // puede iniciar sesion, pero se conservan sus datos e historial.
+    public MPerson anularPersona(int id) {
+        MPerson persona = buscarPersonaPorId(id);
+        persona.setActivo(false);
+        return iPerson.save(persona);
+    }
+
+    // Reactivar una persona bloqueada (por intentos fallidos o anulada)
+    public MPerson reactivarPersona(int id) {
+        MPerson persona = buscarPersonaPorId(id);
+        persona.setActivo(true);
+        persona.setFailedAttempts(0);
+        return iPerson.save(persona);
+    }
+
+    // Eliminar un registro de persona (eliminacion fisica): solo si no tiene
+    // cuentas, porque cuenta.pkpersona es llave foranea hacia person.
+    public void eliminarPersona(int id) {
+        MPerson persona = buscarPersonaPorId(id);
+        if (!iCuenta.findByPersona_Idperson(id).isEmpty()) {
+            throw error(HttpStatus.CONFLICT, "La persona tiene cuentas asociadas: no se puede eliminar, solo anular.");
+        }
+        iPerson.delete(persona);
+    }
 }

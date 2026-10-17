@@ -140,5 +140,14 @@ public  class MPerson{
     public void setFailedAttempts(int faled_attempts) {
         this.failedAttempts = faled_attempts;
     }
-}
 
+    //Encapsulamiento de las relaciones
+
+    public List<MCuenta> getCuentas() {
+        return cuentas;
+    }
+
+    public void setCuentas(List<MCuenta> cuentas) {
+        this.cuentas = cuentas;
+    }
+}

@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Table(name="targeta_credito")
 public class MTarjetaCredito {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(length =11,nullable = false)
     private int id;
     @Column(length = 50,nullable = false)
@@ -127,5 +128,15 @@ public class MTarjetaCredito {
 
     public void setCreatedat(LocalDateTime createdat) {
         this.createdat = createdat;
+    }
+
+    //Encapsulamiento de las relaciones
+
+    public MCuenta getCuenta() {
+        return cuenta;
+    }
+
+    public void setCuenta(MCuenta cuenta) {
+        this.cuenta = cuenta;
     }
 }

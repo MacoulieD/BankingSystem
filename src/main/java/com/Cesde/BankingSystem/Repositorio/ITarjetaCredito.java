@@ -13,4 +13,7 @@ public interface ITarjetaCredito extends JpaRepository<MTarjetaCredito,Integer> 
     MTarjetaCredito findByNumerotarjeta (String Numerotarjeta);
     // busqueda por estado (activa/inactiva): para listar solo las tarjetas vigentes
     List<MTarjetaCredito> findByActivo (Boolean Activo);
+
+    // tarjetas asociadas a una cuenta
+    List<MTarjetaCredito> findByCuenta_Id (int Idcuenta);
 }

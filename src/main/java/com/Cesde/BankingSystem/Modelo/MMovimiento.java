@@ -119,4 +119,14 @@ public class MMovimiento {
     public void setFecha(LocalDateTime fecha) {
         this.fecha = fecha;
     }
+
+    //Encapsulamiento de las relaciones
+
+    public MCuenta getCuenta() {
+        return cuenta;
+    }
+
+    public void setCuenta(MCuenta cuenta) {
+        this.cuenta = cuenta;
+    }
 }
