@@ -24,13 +24,13 @@ public class CPerfil {
 
     // PUT /api/perfil/contacto -> actualiza celular y correo, devuelve la cuenta actualizada
     @PutMapping("/contacto")
-    public ResponseEntity<CuentaResponse> actualizarContacto(@RequestBody ActualizarContactoRequest datos) {
+    public ResponseEntity<CuentaResponse> actualizarContacto(@RequestBody ActualizarContactoRequest datos) throws Exception {
         return ResponseEntity.ok(sPerson.actualizarContacto(datos));
     }
 
     // PUT /api/perfil/clave -> cambia la clave si la clave actual es correcta
     @PutMapping("/clave")
-    public ResponseEntity<Map<String, String>> cambiarClave(@RequestBody CambiarClaveRequest datos) {
+    public ResponseEntity<Map<String, String>> cambiarClave(@RequestBody CambiarClaveRequest datos) throws Exception {
         sPerson.cambiarClave(datos);
         return ResponseEntity.ok(Map.of("message", "Clave actualizada correctamente."));
     }

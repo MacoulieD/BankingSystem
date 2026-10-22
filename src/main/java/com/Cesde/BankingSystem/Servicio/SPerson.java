@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+import com.Cesde.BankingSystem.Excepcion.ExcepcionNegocio;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -48,7 +48,7 @@ public class SPerson {
         try{
             return this.iPerson.save(mPerson);
         }catch (Exception error){
-            throw new Exception(error.getMessage());
+            throw new Exception(error.getMessage(), error);
         }
     }
 
@@ -56,88 +56,120 @@ public class SPerson {
     // transaccion (si falla la cuenta, tampoco queda guardada la persona).
     // Las validaciones son las mismas del formulario de RegisterPage.jsx: el
     // backend las repite porque cualquiera puede llamar la API sin el formulario.
-    @Transactional
-    public CuentaResponse registrar(RegistroRequest datos) {
-        validarRegistro(datos);
+    @Transactional(rollbackFor = Exception.class)
+    public CuentaResponse registrar(RegistroRequest datos) throws Exception {
+        try {
+            validarRegistro(datos);
 
-        MPerson persona = PersonMapper.toEntity(datos);
-        if (iPerson.existsByUsername(persona.getUsername())) {
-            throw error(HttpStatus.CONFLICT, "Ese nombre de usuario ya está registrado.");
-        }
-        if (iPerson.existsByDocumento(persona.getDocumento())) {
-            throw error(HttpStatus.CONFLICT, "Ya existe una cuenta con ese número de documento.");
-        }
-        if (iPerson.existsByEmail(persona.getEmail())) {
-            throw error(HttpStatus.CONFLICT, "Ese correo electrónico ya está registrado.");
-        }
-        persona = iPerson.save(persona);
+            MPerson persona = PersonMapper.toEntity(datos);
+            if (iPerson.existsByUsername(persona.getUsername())) {
+                throw error(HttpStatus.CONFLICT, "Ese nombre de usuario ya está registrado.");
+            }
+            if (iPerson.existsByDocumento(persona.getDocumento())) {
+                throw error(HttpStatus.CONFLICT, "Ya existe una cuenta con ese número de documento.");
+            }
+            if (iPerson.existsByEmail(persona.getEmail())) {
+                throw error(HttpStatus.CONFLICT, "Ese correo electrónico ya está registrado.");
+            }
+            persona = iPerson.save(persona);
 
-        MCuenta cuenta = iCuenta.save(CuentaMapper.toEntity(datos, persona, generarNumeroCuenta()));
-        return armarRespuesta(persona, cuenta);
+            MCuenta cuenta = iCuenta.save(CuentaMapper.toEntity(datos, persona, generarNumeroCuenta()));
+            return armarRespuesta(persona, cuenta);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
     }
 
     // Inicio de sesion: compara la contrasena con la guardada en la BD y usa
     // failedAttempts/activo para bloquear la cuenta despues de MAX_INTENTOS.
     // No es @Transactional a proposito: si lo fuera, la excepcion de
     // "contrasena incorrecta" desharia el aumento de failedAttempts.
-    public CuentaResponse iniciarSesion(LoginRequest datos) {
-        String username = texto(datos.username()).toLowerCase();
-        String password = datos.password() == null ? "" : datos.password();
+    public CuentaResponse iniciarSesion(LoginRequest datos) throws Exception {
+        try {
+            String username = texto(datos.username()).toLowerCase();
+            String password = datos.password() == null ? "" : datos.password();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            throw error(HttpStatus.BAD_REQUEST, "Ingresa tu usuario y contraseña.");
-        }
+            if (username.isEmpty() || password.isEmpty()) {
+                throw error(HttpStatus.BAD_REQUEST, "Ingresa tu usuario y contraseña.");
+            }
 
-        MPerson persona = iPerson.findByUsername(username);
-        if (persona == null) {
-            throw error(HttpStatus.UNAUTHORIZED, "Usuario o contraseña incorrectos. Verifica los datos o crea una cuenta.");
+            MPerson persona = iPerson.findByUsername(username);
+            if (persona == null) {
+                throw error(HttpStatus.UNAUTHORIZED, "Usuario o contraseña incorrectos. Verifica los datos o crea una cuenta.");
+            }
+            verificarClave(persona, password, "Usuario o contraseña incorrectos. Verifica los datos o crea una cuenta.");
+            return armarRespuesta(persona, buscarCuenta(persona));
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
         }
-        verificarClave(persona, password, "Usuario o contraseña incorrectos. Verifica los datos o crea una cuenta.");
-        return armarRespuesta(persona, buscarCuenta(persona));
     }
 
     // Perfil: el usuario solo puede cambiar su celular y su correo (nombre,
     // documento, usuario y tipo de cuenta no se tocan aunque lleguen en el JSON).
-    @Transactional
-    public CuentaResponse actualizarContacto(ActualizarContactoRequest datos) {
-        MPerson persona = buscarPersona(datos.username());
-        String telefono = texto(datos.phone());
-        String email = texto(datos.email()).toLowerCase();
+    @Transactional(rollbackFor = Exception.class)
+    public CuentaResponse actualizarContacto(ActualizarContactoRequest datos) throws Exception {
+        try {
+            MPerson persona = buscarPersona(datos.username());
+            String telefono = texto(datos.phone());
+            String email = texto(datos.email()).toLowerCase();
 
-        validarTelefono(telefono);
-        validarEmail(email);
-        if (iPerson.existsByEmailAndIdpersonNot(email, persona.getIdperson())) {
-            throw error(HttpStatus.CONFLICT, "Ese correo electrónico ya está registrado por otro usuario.");
+            validarTelefono(telefono);
+            validarEmail(email);
+            if (iPerson.existsByEmailAndIdpersonNot(email, persona.getIdperson())) {
+                throw error(HttpStatus.CONFLICT, "Ese correo electrónico ya está registrado por otro usuario.");
+            }
+
+            PersonMapper.actualizarContacto(persona, telefono, email);
+            persona = iPerson.save(persona);
+            return armarRespuesta(persona, buscarCuenta(persona));
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
         }
-
-        PersonMapper.actualizarContacto(persona, telefono, email);
-        persona = iPerson.save(persona);
-        return armarRespuesta(persona, buscarCuenta(persona));
     }
 
     // Perfil: cambio de clave. Pide la clave actual y, si se equivoca, cuenta
     // como intento fallido igual que el login (por eso no es @Transactional).
-    public void cambiarClave(CambiarClaveRequest datos) {
-        MPerson persona = buscarPersona(datos.username());
-        String claveActual = datos.currentPassword() == null ? "" : datos.currentPassword();
-        String claveNueva = datos.newPassword() == null ? "" : datos.newPassword();
+    public void cambiarClave(CambiarClaveRequest datos) throws Exception {
+        try {
+            MPerson persona = buscarPersona(datos.username());
+            String claveActual = datos.currentPassword() == null ? "" : datos.currentPassword();
+            String claveNueva = datos.newPassword() == null ? "" : datos.newPassword();
 
-        if (claveActual.isEmpty()) {
-            throw error(HttpStatus.BAD_REQUEST, "Ingresa tu clave actual.");
-        }
-        validarPassword(claveNueva);
-        verificarClave(persona, claveActual, "La clave actual es incorrecta.");
-        if (claveNueva.equals(claveActual)) {
-            throw error(HttpStatus.BAD_REQUEST, "La nueva clave debe ser diferente a la actual.");
-        }
+            if (claveActual.isEmpty()) {
+                throw error(HttpStatus.BAD_REQUEST, "Ingresa tu clave actual.");
+            }
+            validarPassword(claveNueva);
+            verificarClave(persona, claveActual, "La clave actual es incorrecta.");
+            if (claveNueva.equals(claveActual)) {
+                throw error(HttpStatus.BAD_REQUEST, "La nueva clave debe ser diferente a la actual.");
+            }
 
-        persona.setUserpassword(claveNueva);
-        iPerson.save(persona);
+            persona.setUserpassword(claveNueva);
+            iPerson.save(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
     }
 
     // Compara la clave con la guardada y maneja failedAttempts/activo:
     // al llegar a MAX_INTENTOS fallidos la cuenta queda bloqueada.
-    private void verificarClave(MPerson persona, String password, String mensajeIncorrecta) {
+    private void verificarClave(MPerson persona, String password, String mensajeIncorrecta) throws ExcepcionNegocio {
         if (!Boolean.TRUE.equals(persona.getActivo())) {
             throw error(HttpStatus.FORBIDDEN, "Tu cuenta está bloqueada por intentos fallidos. Comunícate con soporte.");
         }
@@ -159,7 +191,7 @@ public class SPerson {
         }
     }
 
-    private MPerson buscarPersona(String username) {
+    private MPerson buscarPersona(String username) throws ExcepcionNegocio {
         MPerson persona = iPerson.findByUsername(texto(username).toLowerCase());
         if (persona == null) {
             throw error(HttpStatus.NOT_FOUND, "No encontramos el usuario.");
@@ -167,7 +199,7 @@ public class SPerson {
         return persona;
     }
 
-    private MCuenta buscarCuenta(MPerson persona) {
+    private MCuenta buscarCuenta(MPerson persona) throws ExcepcionNegocio {
         MCuenta cuenta = iCuenta.findFirstByPersonaOrderByIdAsc(persona);
         if (cuenta == null) {
             throw error(HttpStatus.NOT_FOUND, "No encontramos una cuenta asociada a este usuario.");
@@ -175,26 +207,26 @@ public class SPerson {
         return cuenta;
     }
 
-    private void validarTelefono(String telefono) {
+    private void validarTelefono(String telefono) throws ExcepcionNegocio {
         if (!telefono.matches("3\\d{9}")) {
             throw error(HttpStatus.BAD_REQUEST, "El celular debe tener 10 dígitos y empezar por 3.");
         }
     }
 
-    private void validarEmail(String email) {
+    private void validarEmail(String email) throws ExcepcionNegocio {
         if (email.length() > 50 || !email.matches("[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}")) {
             throw error(HttpStatus.BAD_REQUEST, "Ingresa un correo electrónico válido, por ejemplo nombre@correo.com.");
         }
     }
 
     // maximo 50 caracteres: cabe en la columna userpassword (varchar 60)
-    private void validarPassword(String password) {
+    private void validarPassword(String password) throws ExcepcionNegocio {
         if (password.length() < 4 || password.length() > 50) {
             throw error(HttpStatus.BAD_REQUEST, "La contraseña debe tener entre 4 y 50 caracteres.");
         }
     }
 
-    private void validarRegistro(RegistroRequest datos) {
+    private void validarRegistro(RegistroRequest datos) throws ExcepcionNegocio {
         String tipoDocumento = texto(datos.documentType());
         String documento = texto(datos.documentNumber()).toUpperCase();
         String telefono = texto(datos.phone());
@@ -245,8 +277,8 @@ public class SPerson {
         return numero;
     }
 
-    private static ResponseStatusException error(HttpStatus estado, String mensaje) {
-        return new ResponseStatusException(estado, mensaje);
+    private static ExcepcionNegocio error(HttpStatus estado, String mensaje) {
+        return new ExcepcionNegocio(estado, mensaje);
     }
 
     // =====================  CRUD Y CONSULTAS DE PERSONA  =====================
@@ -254,74 +286,132 @@ public class SPerson {
     // proyecto concesionario, aplicada a Person)
 
     // Consulta general
-    public List<MPerson> listarPersonas() {
-        return iPerson.findAll();
+    public List<MPerson> listarPersonas() throws Exception {
+        try {
+            return iPerson.findAll();
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
     }
 
     // Consulta por llave primaria
-    public MPerson buscarPersonaPorId(int id) {
-        return iPerson.findById(id)
-                .orElseThrow(() -> error(HttpStatus.NOT_FOUND, "No existe una persona con id " + id + "."));
+    public MPerson buscarPersonaPorId(int id) throws Exception {
+        try {
+            return iPerson.findById(id)
+                    .orElseThrow(() -> error(HttpStatus.NOT_FOUND, "No existe una persona con id " + id + "."));
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
     }
 
     // Consulta persona por nombre (puede haber varias con el mismo nombre)
-    public List<MPerson> buscarPersonasPorNombre(String nombre) {
-        return iPerson.findByName(texto(nombre).replaceAll("\\s+", " "));
+    public List<MPerson> buscarPersonasPorNombre(String nombre) throws Exception {
+        try {
+            return iPerson.findByName(texto(nombre).replaceAll("\\s+", " "));
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
     }
 
     // Consultar las cuentas de una persona
-    public List<MCuenta> listarCuentasDePersona(int id) {
-        buscarPersonaPorId(id);
-        return iCuenta.findByPersona_Idperson(id);
+    public List<MCuenta> listarCuentasDePersona(int id) throws Exception {
+        try {
+            buscarPersonaPorId(id);
+            return iCuenta.findByPersona_Idperson(id);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
     }
 
     // Modificar un registro de persona: nombre, telefono y correo.
     // Documento, usuario y clave no se cambian aqui (la clave tiene su propio
     // metodo, cambiarClave, que exige la clave actual).
-    public MPerson modificarPersona(int id, MPerson datos) {
-        MPerson persona = buscarPersonaPorId(id);
-        if (datos.getName() != null && !datos.getName().isBlank()) {
-            persona.setName(texto(datos.getName()).replaceAll("\\s+", " "));
-        }
-        if (datos.getTelephone() != null) {
-            String telefono = texto(datos.getTelephone());
-            validarTelefono(telefono);
-            persona.setTelephone(telefono);
-        }
-        if (datos.getEmail() != null) {
-            String email = texto(datos.getEmail()).toLowerCase();
-            validarEmail(email);
-            if (iPerson.existsByEmailAndIdpersonNot(email, id)) {
-                throw error(HttpStatus.CONFLICT, "Ese correo electrónico ya está registrado por otro usuario.");
+    public MPerson modificarPersona(int id, MPerson datos) throws Exception {
+        try {
+            MPerson persona = buscarPersonaPorId(id);
+            if (datos.getName() != null && !datos.getName().isBlank()) {
+                persona.setName(texto(datos.getName()).replaceAll("\\s+", " "));
             }
-            persona.setEmail(email);
+            if (datos.getTelephone() != null) {
+                String telefono = texto(datos.getTelephone());
+                validarTelefono(telefono);
+                persona.setTelephone(telefono);
+            }
+            if (datos.getEmail() != null) {
+                String email = texto(datos.getEmail()).toLowerCase();
+                validarEmail(email);
+                if (iPerson.existsByEmailAndIdpersonNot(email, id)) {
+                    throw error(HttpStatus.CONFLICT, "Ese correo electrónico ya está registrado por otro usuario.");
+                }
+                persona.setEmail(email);
+            }
+            return iPerson.save(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
         }
-        return iPerson.save(persona);
     }
 
     // Anular un registro de persona (eliminacion logica): queda inactiva y no
     // puede iniciar sesion, pero se conservan sus datos e historial.
-    public MPerson anularPersona(int id) {
-        MPerson persona = buscarPersonaPorId(id);
-        persona.setActivo(false);
-        return iPerson.save(persona);
+    public MPerson anularPersona(int id) throws Exception {
+        try {
+            MPerson persona = buscarPersonaPorId(id);
+            persona.setActivo(false);
+            return iPerson.save(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
     }
 
     // Reactivar una persona bloqueada (por intentos fallidos o anulada)
-    public MPerson reactivarPersona(int id) {
-        MPerson persona = buscarPersonaPorId(id);
-        persona.setActivo(true);
-        persona.setFailedAttempts(0);
-        return iPerson.save(persona);
+    public MPerson reactivarPersona(int id) throws Exception {
+        try {
+            MPerson persona = buscarPersonaPorId(id);
+            persona.setActivo(true);
+            persona.setFailedAttempts(0);
+            return iPerson.save(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
     }
 
     // Eliminar un registro de persona (eliminacion fisica): solo si no tiene
     // cuentas, porque cuenta.pkpersona es llave foranea hacia person.
-    public void eliminarPersona(int id) {
-        MPerson persona = buscarPersonaPorId(id);
-        if (!iCuenta.findByPersona_Idperson(id).isEmpty()) {
-            throw error(HttpStatus.CONFLICT, "La persona tiene cuentas asociadas: no se puede eliminar, solo anular.");
+    public void eliminarPersona(int id) throws Exception {
+        try {
+            MPerson persona = buscarPersonaPorId(id);
+            if (!iCuenta.findByPersona_Idperson(id).isEmpty()) {
+                throw error(HttpStatus.CONFLICT, "La persona tiene cuentas asociadas: no se puede eliminar, solo anular.");
+            }
+            iPerson.delete(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
         }
-        iPerson.delete(persona);
     }
 }
