@@ -25,13 +25,13 @@ public class CAutenticacion {
 
     // POST /api/registro -> crea persona + cuenta y devuelve 201
     @PostMapping("/registro")
-    public ResponseEntity<CuentaResponse> registrar(@RequestBody RegistroRequest datos) {
+    public ResponseEntity<CuentaResponse> registrar(@RequestBody RegistroRequest datos) throws Exception {
         return ResponseEntity.status(HttpStatus.CREATED).body(sPerson.registrar(datos));
     }
 
     // POST /api/login -> devuelve los datos de la cuenta si las credenciales son correctas
     @PostMapping("/login")
-    public ResponseEntity<CuentaResponse> iniciarSesion(@RequestBody LoginRequest datos) {
+    public ResponseEntity<CuentaResponse> iniciarSesion(@RequestBody LoginRequest datos) throws Exception {
         return ResponseEntity.ok(sPerson.iniciarSesion(datos));
     }
 }
