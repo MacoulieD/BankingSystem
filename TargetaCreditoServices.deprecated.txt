@@ -1,2 +1,0 @@
-Interfaz legacy movida fuera de src/main/java.
-La convención activa es TarjetaCreditoServices.
