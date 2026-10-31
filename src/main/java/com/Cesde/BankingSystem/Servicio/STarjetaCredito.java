@@ -1,28 +1,291 @@
 package com.Cesde.BankingSystem.Servicio;
 
+import com.Cesde.BankingSystem.Dto.CompraTarjetaRequest;
+import com.Cesde.BankingSystem.Dto.CuentaResponse;
+import com.Cesde.BankingSystem.Dto.PagoTarjetaRequest;
+import com.Cesde.BankingSystem.Dto.SolicitarTarjetaRequest;
+import com.Cesde.BankingSystem.Dto.UsuarioRequest;
+import com.Cesde.BankingSystem.Mapper.TarjetaMapper;
 import com.Cesde.BankingSystem.Modelo.MCuenta;
+import com.Cesde.BankingSystem.Modelo.MMovimientoTarjeta;
+import com.Cesde.BankingSystem.Modelo.MPerson;
 import com.Cesde.BankingSystem.Modelo.MTarjetaCredito;
 import com.Cesde.BankingSystem.Repositorio.ICuenta;
+import com.Cesde.BankingSystem.Repositorio.IMovimientoTarjeta;
 import com.Cesde.BankingSystem.Repositorio.ITarjetaCredito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.Cesde.BankingSystem.Excepcion.ExcepcionNegocio;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static com.Cesde.BankingSystem.Mapper.MapperUtils.texto;
 
 // Servicio de MTarjetaCredito: creacion de tarjetas, consulta de cupo y
 // registro de compras y pagos validando la deuda contra el limite de credito.
 @Service
 public class STarjetaCredito {
 
+    // reglas de la tarjeta (mismos valores de creditCard.js en el frontend)
+    public static final double CUPO_MINIMO = 500_000;
+    public static final double CUPO_MAXIMO = 20_000_000;
+    // plazos que el usuario puede elegir al comprar: 1 cuota sin interes y
+    // las demas con 1,8 % mensual
+    public static final List<Integer> CUOTAS_PERMITIDAS = List.of(1, 3, 6, 12, 24, 36);
+    public static final double TASA_MENSUAL = 0.018;
+    private static final int ANIOS_VIGENCIA = 5;
+
+    // tipos de movimiento de la tarjeta (columna movimiento_tarjeta.tipo)
+    public static final String COMPRA = "card-purchase";
+    public static final String PAGO = "card-payment";
+
     @Autowired
     ITarjetaCredito iTarjetaCredito;
 
     @Autowired
     ICuenta iCuenta;
+
+    @Autowired
+    IMovimientoTarjeta iMovimientoTarjeta;
+
+    @Autowired
+    SPerson sPerson;
+
+    @Autowired
+    SCuenta sCuenta;
+
+    @Autowired
+    SMovimiento sMovimiento;
+
+    // =====================  OPERACIONES DEL FRONTEND  =====================
+    // Mismas reglas de CreditCardPanel.jsx y creditCard.js. Todas reciben el
+    // username y devuelven el usuario completo actualizado.
+
+    // Solicitar la tarjeta: una por usuario, ligada a una de sus cuentas
+    @Transactional(rollbackFor = Exception.class)
+    public CuentaResponse solicitar(SolicitarTarjetaRequest datos) throws Exception {
+        try {
+            MPerson persona = sPerson.buscarPersonaActiva(datos.username());
+            if (iTarjetaCredito.findFirstByCuenta_Persona_Idperson(persona.getIdperson()) != null) {
+                throw error(HttpStatus.CONFLICT, "Ya tienes una tarjeta de crédito.");
+            }
+            MCuenta cuenta = sCuenta.cuentaDelUsuario(persona, datos.accountNumber());
+            Double limite = datos.limit();
+            if (limite == null || limite != Math.floor(limite) || limite < CUPO_MINIMO || limite > CUPO_MAXIMO) {
+                throw error(HttpStatus.BAD_REQUEST, "El cupo debe estar entre " + Validaciones.pesos(CUPO_MINIMO)
+                        + " y " + Validaciones.pesos(CUPO_MAXIMO) + ".");
+            }
+            MTarjetaCredito tarjeta = new MTarjetaCredito();
+            tarjeta.setNumerotarjeta(generarNumeroTarjeta());
+            tarjeta.setCvv(digitosAleatorios(3));
+            tarjeta.setLimitecredito(limite);
+            tarjeta.setFechavencimiento(LocalDate.now().plusYears(ANIOS_VIGENCIA));
+            // adicionarTarjeta repite las validaciones y llena deuda, estado y fecha
+            adicionarTarjeta(tarjeta, cuenta.getId());
+            return sPerson.armarRespuesta(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // Compra a cuotas: la deuda sube por el total CON intereses
+    @Transactional(rollbackFor = Exception.class)
+    public CuentaResponse comprar(CompraTarjetaRequest datos) throws Exception {
+        try {
+            MPerson persona = sPerson.buscarPersonaActiva(datos.username());
+            MTarjetaCredito tarjeta = tarjetaDelUsuario(persona);
+            String comercio = texto(datos.merchant()).replaceAll("\\s+", " ");
+            if (comercio.length() < 2 || comercio.length() > 40) {
+                throw error(HttpStatus.BAD_REQUEST, "Ingresa el nombre del comercio.");
+            }
+            double capital = Validaciones.montoEntero(datos.amount());
+            Integer cuotas = datos.installments();
+            if (cuotas == null || !CUOTAS_PERMITIDAS.contains(cuotas)) {
+                throw error(HttpStatus.BAD_REQUEST, "Elige 1, 3, 6, 12, 24 o 36 cuotas.");
+            }
+            if (!Boolean.TRUE.equals(tarjeta.getActivo())) {
+                throw error(HttpStatus.CONFLICT, "La tarjeta está bloqueada: no permite compras.");
+            }
+            if (tarjeta.getFechavencimiento().isBefore(LocalDate.now())) {
+                throw error(HttpStatus.CONFLICT, "La tarjeta está vencida: no permite compras.");
+            }
+            double[] plan = planDeCuotas(capital, cuotas);
+            double valorCuota = plan[0];
+            double total = plan[1];
+            if (total > cupoDisponible(tarjeta)) {
+                throw error(HttpStatus.CONFLICT, "Cupo insuficiente. Disponible: " + Validaciones.pesos(cupoDisponible(tarjeta))
+                        + "; esta compra con intereses suma " + Validaciones.pesos(total) + ".");
+            }
+            tarjeta.setDeudaactual(tarjeta.getDeudaactual() + total);
+            iTarjetaCredito.save(tarjeta);
+
+            MMovimientoTarjeta compra = nuevoMovimiento(tarjeta, COMPRA, "Compra en " + comercio, total);
+            compra.setCapital(capital);
+            compra.setCuotas(cuotas);
+            compra.setValorcuota(valorCuota);
+            compra.setSaldopendiente(total);
+            iMovimientoTarjeta.save(compra);
+            return sPerson.armarRespuesta(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // Pago desde una cuenta del usuario: descuenta de la cuenta, resta la deuda
+    // y abona a las compras pendientes de la mas antigua a la mas reciente.
+    // Se permite aunque la tarjeta este bloqueada o vencida.
+    @Transactional(rollbackFor = Exception.class)
+    public CuentaResponse pagar(PagoTarjetaRequest datos) throws Exception {
+        try {
+            MPerson persona = sPerson.buscarPersonaActiva(datos.username());
+            MTarjetaCredito tarjeta = tarjetaDelUsuario(persona);
+            MCuenta cuenta = sCuenta.cuentaDelUsuario(persona, datos.fromAccountNumber());
+            double monto = Validaciones.montoEntero(datos.amount());
+            if (tarjeta.getDeudaactual() <= 0) {
+                throw error(HttpStatus.BAD_REQUEST, "No tienes deuda pendiente.");
+            }
+            if (monto > tarjeta.getDeudaactual()) {
+                throw error(HttpStatus.BAD_REQUEST, "El pago no puede ser mayor a la deuda (" + Validaciones.pesos(tarjeta.getDeudaactual()) + ").");
+            }
+            // en la cuenta corriente tambien cuenta el sobregiro
+            if (monto > SMovimiento.disponible(cuenta)) {
+                throw error(HttpStatus.CONFLICT, "No tienes saldo suficiente en esa cuenta.");
+            }
+
+            sMovimiento.registrarMovimiento(cuenta, SMovimiento.PAGO_TARJETA, -monto,
+                    "Pago tarjeta de crédito ****" + TarjetaMapper.ultimos4(tarjeta.getNumerotarjeta()));
+
+            tarjeta.setDeudaactual(tarjeta.getDeudaactual() - monto);
+            iTarjetaCredito.save(tarjeta);
+
+            double restante = monto;
+            for (MMovimientoTarjeta movimiento : iMovimientoTarjeta.findByTarjeta_IdOrderByFechaAscIdAsc(tarjeta.getId())) {
+                if (restante <= 0) {
+                    break;
+                }
+                if (COMPRA.equals(movimiento.getTipo()) && movimiento.getSaldopendiente() != null && movimiento.getSaldopendiente() > 0) {
+                    double abono = Math.min(movimiento.getSaldopendiente(), restante);
+                    movimiento.setSaldopendiente(movimiento.getSaldopendiente() - abono);
+                    restante -= abono;
+                    iMovimientoTarjeta.save(movimiento);
+                }
+            }
+
+            iMovimientoTarjeta.save(nuevoMovimiento(tarjeta, PAGO, "Pago desde cuenta ****"
+                    + cuenta.getNumerocuenta().substring(cuenta.getNumerocuenta().length() - 4), monto));
+            return sPerson.armarRespuesta(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // Bloquear: ya no permite compras y no se puede desbloquear (se puede seguir pagando)
+    public CuentaResponse bloquear(UsuarioRequest datos) throws Exception {
+        try {
+            MPerson persona = sPerson.buscarPersonaActiva(datos.username());
+            MTarjetaCredito tarjeta = tarjetaDelUsuario(persona);
+            if (!Boolean.TRUE.equals(tarjeta.getActivo())) {
+                throw error(HttpStatus.CONFLICT, "La tarjeta ya está bloqueada.");
+            }
+            tarjeta.setActivo(false);
+            iTarjetaCredito.save(tarjeta);
+            return sPerson.armarRespuesta(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // Cancelar: solo sin deuda. Se borran la tarjeta y su historial (el
+    // frontend dice "se elimina definitivamente"); luego puede pedir otra.
+    @Transactional(rollbackFor = Exception.class)
+    public CuentaResponse cancelar(UsuarioRequest datos) throws Exception {
+        try {
+            MPerson persona = sPerson.buscarPersonaActiva(datos.username());
+            MTarjetaCredito tarjeta = tarjetaDelUsuario(persona);
+            if (tarjeta.getDeudaactual() > 0) {
+                throw error(HttpStatus.CONFLICT, "La tarjeta tiene deuda pendiente: no se puede cancelar.");
+            }
+            iMovimientoTarjeta.deleteByTarjeta_Id(tarjeta.getId());
+            iTarjetaCredito.delete(tarjeta);
+            return sPerson.armarRespuesta(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // Plan de cuotas, igual que installmentPlan de creditCard.js:
+    //  - 1 cuota: sin interes, total = capital
+    //  - 3, 6, 12, 24 o 36 cuotas: 1,8 % mensual con cuota fija (amortizacion francesa):
+    //    cuota = techo(capital * i / (1 - (1 + i)^-n)), total = cuota * n
+    // Devuelve {cuota, total}
+    public static double[] planDeCuotas(double capital, int cuotas) {
+        if (cuotas == 1) {
+            return new double[]{capital, capital};
+        }
+        double cuota = Math.ceil((capital * TASA_MENSUAL) / (1 - Math.pow(1 + TASA_MENSUAL, -cuotas)));
+        return new double[]{cuota, cuota * cuotas};
+    }
+
+    private MTarjetaCredito tarjetaDelUsuario(MPerson persona) throws ExcepcionNegocio {
+        MTarjetaCredito tarjeta = iTarjetaCredito.findFirstByCuenta_Persona_Idperson(persona.getIdperson());
+        if (tarjeta == null) {
+            throw error(HttpStatus.NOT_FOUND, "No tienes una tarjeta de crédito.");
+        }
+        return tarjeta;
+    }
+
+    private MMovimientoTarjeta nuevoMovimiento(MTarjetaCredito tarjeta, String tipo, String descripcion, double monto) {
+        MMovimientoTarjeta movimiento = new MMovimientoTarjeta();
+        movimiento.setTarjeta(tarjeta);
+        movimiento.setTipo(tipo);
+        movimiento.setDescripcion(descripcion);
+        movimiento.setMonto(monto);
+        movimiento.setDeudaposterior(tarjeta.getDeudaactual());
+        movimiento.setFecha(LocalDateTime.now());
+        return movimiento;
+    }
+
+    // 16 digitos que empiezan por 4 y no existen todavia en la BD
+    private String generarNumeroTarjeta() {
+        String numero;
+        do {
+            numero = "4" + digitosAleatorios(15);
+        } while (iTarjetaCredito.existsByNumerotarjeta(numero));
+        return numero;
+    }
+
+    private static String digitosAleatorios(int cantidad) {
+        StringBuilder digitos = new StringBuilder();
+        for (int i = 0; i < cantidad; i++) {
+            digitos.append(ThreadLocalRandom.current().nextInt(10));
+        }
+        return digitos.toString();
+    }
 
     // =====================  ESCRITURA  =====================
 

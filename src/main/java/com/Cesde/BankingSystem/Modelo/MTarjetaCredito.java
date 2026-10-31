@@ -13,7 +13,7 @@ public class MTarjetaCredito {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(length =11,nullable = false)
     private int id;
-    @Column(length = 50,nullable = false)
+    @Column(length = 50,nullable = false,unique = true)
     private String numerotarjeta;
     @Column(length = 50,nullable = false)
     private String propietario;

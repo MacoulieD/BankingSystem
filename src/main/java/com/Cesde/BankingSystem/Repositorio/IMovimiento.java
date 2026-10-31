@@ -18,6 +18,8 @@ public interface IMovimiento extends JpaRepository<MMovimiento,Integer> {
 
     // historial de una cuenta por su id, del mas reciente al mas antiguo
     List<MMovimiento> findByCuenta_IdOrderByFechaDesc (int Idcuenta);
+    // historial de una cuenta del mas antiguo al mas reciente (como lo recibe el frontend)
+    List<MMovimiento> findByCuenta_IdOrderByFechaAscIdAsc (int Idcuenta);
 
     // movimientos entre dos fechas (ej. extracto de un mes)
     List<MMovimiento> findByFechaBetween (LocalDateTime Desde, LocalDateTime Hasta);

@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Python ###
+python/.venv/
+__pycache__/
+python/reportes/
