@@ -22,6 +22,8 @@ public interface ICuenta extends JpaRepository<MCuenta,Integer> {
 
     // todas las cuentas de una persona (puede tener varias)
     List<MCuenta> findByPersona_Idperson (int Idperson);
+    // las mismas, de la mas antigua a la mas reciente (la primera es la del registro)
+    List<MCuenta> findByPersona_IdpersonOrderByIdAsc (int Idperson);
 
     // cuentas activas o inactivas
     List<MCuenta> findByEstado (Boolean Estado);

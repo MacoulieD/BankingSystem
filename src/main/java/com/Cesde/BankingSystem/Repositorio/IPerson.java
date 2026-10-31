@@ -24,4 +24,8 @@ public interface IPerson extends JpaRepository<MPerson,Integer> {
     boolean existsByEmail (String Email);
     // al editar el perfil: el correo no puede ser de OTRA persona
     boolean existsByEmailAndIdpersonNot (String Email, int Idperson);
+    // el celular tampoco se repite: identifica al destinatario en las transferencias
+    MPerson findByTelephone (String Telephone);
+    boolean existsByTelephone (String Telephone);
+    boolean existsByTelephoneAndIdpersonNot (String Telephone, int Idperson);
 }

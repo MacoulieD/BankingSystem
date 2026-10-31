@@ -2,17 +2,23 @@ package com.Cesde.BankingSystem.Servicio;
 
 import com.Cesde.BankingSystem.Dto.ActualizarContactoRequest;
 import com.Cesde.BankingSystem.Dto.CambiarClaveRequest;
+import com.Cesde.BankingSystem.Dto.CuentaBancariaResponse;
 import com.Cesde.BankingSystem.Dto.CuentaResponse;
 import com.Cesde.BankingSystem.Dto.LoginRequest;
 import com.Cesde.BankingSystem.Dto.RegistroRequest;
+import com.Cesde.BankingSystem.Dto.TarjetaResponse;
 import com.Cesde.BankingSystem.Mapper.CuentaMapper;
 import com.Cesde.BankingSystem.Mapper.MovimientoMapper;
 import com.Cesde.BankingSystem.Mapper.PersonMapper;
+import com.Cesde.BankingSystem.Mapper.TarjetaMapper;
 import com.Cesde.BankingSystem.Modelo.MCuenta;
 import com.Cesde.BankingSystem.Modelo.MPerson;
+import com.Cesde.BankingSystem.Modelo.MTarjetaCredito;
 import com.Cesde.BankingSystem.Repositorio.ICuenta;
 import com.Cesde.BankingSystem.Repositorio.IMovimiento;
+import com.Cesde.BankingSystem.Repositorio.IMovimientoTarjeta;
 import com.Cesde.BankingSystem.Repositorio.IPerson;
+import com.Cesde.BankingSystem.Repositorio.ITarjetaCredito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -39,6 +45,10 @@ public class SPerson {
     ICuenta iCuenta;
     @Autowired
     IMovimiento iMovimiento;
+    @Autowired
+    ITarjetaCredito iTarjetaCredito;
+    @Autowired
+    IMovimientoTarjeta iMovimientoTarjeta;
 
     // Adicionar una persona: recibe el objeto armado desde afuera (controlador)
     // y delega el guardado al repositorio. Si algo falla (ej. una restriccion
@@ -71,10 +81,13 @@ public class SPerson {
             if (iPerson.existsByEmail(persona.getEmail())) {
                 throw error(HttpStatus.CONFLICT, "Ese correo electrónico ya está registrado.");
             }
+            if (iPerson.existsByTelephone(persona.getTelephone())) {
+                throw error(HttpStatus.CONFLICT, "Ese número de celular ya está registrado.");
+            }
             persona = iPerson.save(persona);
 
-            MCuenta cuenta = iCuenta.save(CuentaMapper.toEntity(datos, persona, generarNumeroCuenta()));
-            return armarRespuesta(persona, cuenta);
+            iCuenta.save(CuentaMapper.toEntity(datos, persona, generarNumeroCuenta()));
+            return armarRespuesta(persona);
         } catch (ExcepcionNegocio error) {
             // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
             throw error;
@@ -102,7 +115,9 @@ public class SPerson {
                 throw error(HttpStatus.UNAUTHORIZED, "Usuario o contraseña incorrectos. Verifica los datos o crea una cuenta.");
             }
             verificarClave(persona, password, "Usuario o contraseña incorrectos. Verifica los datos o crea una cuenta.");
-            return armarRespuesta(persona, buscarCuenta(persona));
+            // el dashboard necesita al menos una cuenta
+            buscarCuenta(persona);
+            return armarRespuesta(persona);
         } catch (ExcepcionNegocio error) {
             // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
             throw error;
@@ -126,10 +141,13 @@ public class SPerson {
             if (iPerson.existsByEmailAndIdpersonNot(email, persona.getIdperson())) {
                 throw error(HttpStatus.CONFLICT, "Ese correo electrónico ya está registrado por otro usuario.");
             }
+            if (iPerson.existsByTelephoneAndIdpersonNot(telefono, persona.getIdperson())) {
+                throw error(HttpStatus.CONFLICT, "Ese número de celular ya está registrado por otro usuario.");
+            }
 
             PersonMapper.actualizarContacto(persona, telefono, email);
             persona = iPerson.save(persona);
-            return armarRespuesta(persona, buscarCuenta(persona));
+            return armarRespuesta(persona);
         } catch (ExcepcionNegocio error) {
             // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
             throw error;
@@ -191,10 +209,21 @@ public class SPerson {
         }
     }
 
-    private MPerson buscarPersona(String username) throws ExcepcionNegocio {
+    // Public porque las operaciones (SCuenta, SMovimiento, STarjetaCredito)
+    // identifican al usuario por el username que envia el frontend
+    public MPerson buscarPersona(String username) throws ExcepcionNegocio {
         MPerson persona = iPerson.findByUsername(texto(username).toLowerCase());
         if (persona == null) {
             throw error(HttpStatus.NOT_FOUND, "No encontramos el usuario.");
+        }
+        return persona;
+    }
+
+    // Para las operaciones de dinero: el usuario debe existir y no estar bloqueado
+    public MPerson buscarPersonaActiva(String username) throws ExcepcionNegocio {
+        MPerson persona = buscarPersona(username);
+        if (!Boolean.TRUE.equals(persona.getActivo())) {
+            throw error(HttpStatus.FORBIDDEN, "Tu cuenta está bloqueada por intentos fallidos. Comunícate con soporte.");
         }
         return persona;
     }
@@ -263,13 +292,23 @@ public class SPerson {
         }
     }
 
-    private CuentaResponse armarRespuesta(MPerson persona, MCuenta cuenta) {
-        return CuentaMapper.toResponse(persona, cuenta,
-                MovimientoMapper.toResponseList(iMovimiento.findByNumerocuenta(cuenta.getNumerocuenta())));
+    // Respuesta de todas las operaciones: la persona con todas sus cuentas
+    // (de la mas antigua a la mas reciente), los movimientos de cada una y su
+    // tarjeta de credito (o null). Public porque la usan los demas servicios.
+    public CuentaResponse armarRespuesta(MPerson persona) {
+        List<CuentaBancariaResponse> cuentas = iCuenta.findByPersona_IdpersonOrderByIdAsc(persona.getIdperson()).stream()
+                .map(cuenta -> CuentaMapper.toCuentaBancaria(cuenta,
+                        MovimientoMapper.toResponseList(iMovimiento.findByCuenta_IdOrderByFechaAscIdAsc(cuenta.getId()))))
+                .toList();
+        MTarjetaCredito tarjeta = iTarjetaCredito.findFirstByCuenta_Persona_Idperson(persona.getIdperson());
+        TarjetaResponse respuestaTarjeta = tarjeta == null ? null
+                : TarjetaMapper.toResponse(tarjeta, iMovimientoTarjeta.findByTarjeta_IdOrderByFechaAscIdAsc(tarjeta.getId()));
+        return CuentaMapper.toResponse(persona, cuentas, respuestaTarjeta);
     }
 
-    // numero de cuenta de 10 digitos que no exista todavia en la BD
-    private String generarNumeroCuenta() {
+    // numero de cuenta de 10 digitos que no exista todavia en la BD.
+    // Public porque SCuenta.abrirCuenta tambien lo usa.
+    public String generarNumeroCuenta() {
         String numero;
         do {
             numero = String.valueOf(ThreadLocalRandom.current().nextLong(1_000_000_000L, 10_000_000_000L));
@@ -345,6 +384,9 @@ public class SPerson {
             if (datos.getTelephone() != null) {
                 String telefono = texto(datos.getTelephone());
                 validarTelefono(telefono);
+                if (iPerson.existsByTelephoneAndIdpersonNot(telefono, id)) {
+                    throw error(HttpStatus.CONFLICT, "Ese número de celular ya está registrado por otro usuario.");
+                }
                 persona.setTelephone(telefono);
             }
             if (datos.getEmail() != null) {

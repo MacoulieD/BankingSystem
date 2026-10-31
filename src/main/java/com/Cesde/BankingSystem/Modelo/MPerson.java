@@ -21,7 +21,8 @@ public  class MPerson{
     private String documento;
     @Column(length = 60,nullable = false)
     private String name;
-    @Column(length = 20,nullable = false)
+    // unico: identifica al destinatario en las transferencias por celular
+    @Column(length = 20,nullable = false,unique = true)
     private String  telephone;
     @Column(length = 50,unique = true)
     private String email;

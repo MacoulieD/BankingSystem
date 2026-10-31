@@ -1,16 +1,26 @@
 package com.Cesde.BankingSystem.Servicio;
 
+import com.Cesde.BankingSystem.Dto.AbrirCuentaRequest;
+import com.Cesde.BankingSystem.Dto.CuentaResponse;
+import com.Cesde.BankingSystem.Dto.DestinoResponse;
+import com.Cesde.BankingSystem.Mapper.CuentaMapper;
 import com.Cesde.BankingSystem.Modelo.MCuenta;
+import com.Cesde.BankingSystem.Modelo.MPerson;
 import com.Cesde.BankingSystem.Repositorio.ICuenta;
 import com.Cesde.BankingSystem.Repositorio.IMovimiento;
+import com.Cesde.BankingSystem.Repositorio.IPerson;
 import com.Cesde.BankingSystem.Repositorio.ITarjetaCredito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.Cesde.BankingSystem.Excepcion.ExcepcionNegocio;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+
+import static com.Cesde.BankingSystem.Mapper.MapperUtils.texto;
 
 // Servicio de MCuenta (la superclase de la herencia JOINED).
 // Maneja la logica comun a cualquier tipo de cuenta. Lo que devuelve ICuenta
@@ -29,6 +39,17 @@ public class SCuenta {
 
     @Autowired
     ITarjetaCredito iTarjetaCredito;
+
+    @Autowired
+    IPerson iPerson;
+
+    @Autowired
+    SPerson sPerson;
+
+    // nombres que muestra el frontend (ACCOUNT_TYPE_NAMES en bankAccounts.js)
+    public static final Map<String, String> NOMBRES_TIPO = Map.of(
+            CuentaMapper.TIPO_AHORRO, "Cuenta de Ahorros",
+            CuentaMapper.TIPO_CORRIENTE, "Cuenta Corriente");
 
     // =====================  ESCRITURA  =====================
 
@@ -108,6 +129,98 @@ public class SCuenta {
             // error inesperado: se relanza con su mensaje y la causa original
             throw new Exception(error.getMessage(), error);
         }
+    }
+
+    // =====================  OPERACIONES DEL FRONTEND  =====================
+
+    // Abrir otra cuenta desde el dashboard: maximo una de cada tipo
+    // (ahorros y corriente) por usuario. Devuelve el usuario actualizado.
+    @Transactional(rollbackFor = Exception.class)
+    public CuentaResponse abrirCuenta(AbrirCuentaRequest datos) throws Exception {
+        try {
+            MPerson persona = sPerson.buscarPersonaActiva(datos.username());
+            String tipo = texto(datos.accountType());
+            if (!tipo.equals(CuentaMapper.TIPO_AHORRO) && !tipo.equals(CuentaMapper.TIPO_CORRIENTE)) {
+                throw error(HttpStatus.BAD_REQUEST, "Tipo de cuenta no válido.");
+            }
+            double saldo = Validaciones.enteroNoNegativo(datos.balance(),
+                    "El saldo inicial debe ser un número entero mayor o igual a 0.");
+            boolean yaLaTiene = iCuenta.findByPersona_Idperson(persona.getIdperson()).stream()
+                    .anyMatch(cuenta -> CuentaMapper.tipo(cuenta).equals(tipo));
+            if (yaLaTiene) {
+                throw error(HttpStatus.CONFLICT, "Ya tienes una " + NOMBRES_TIPO.get(tipo) + ".");
+            }
+            iCuenta.save(CuentaMapper.toEntity(tipo, (long) saldo, persona, sPerson.generarNumeroCuenta()));
+            return sPerson.armarRespuesta(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // Destino de una transferencia a una cuenta MiPlata, buscado por numero de cuenta
+    public DestinoResponse buscarDestino(String numerocuenta) throws Exception {
+        try {
+            MCuenta cuenta = iCuenta.findByNumerocuenta(Validaciones.digitos(numerocuenta));
+            if (cuenta == null || !Boolean.TRUE.equals(cuenta.getEstado())) {
+                throw error(HttpStatus.NOT_FOUND, "No encontramos una cuenta MiPlata con ese número.");
+            }
+            return toDestino(cuenta);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // Destino de una transferencia por celular: la primera cuenta (la mas
+    // antigua) del usuario que tiene ese celular
+    public DestinoResponse buscarDestinoPorCelular(String celular) throws Exception {
+        try {
+            return toDestino(primeraCuentaPorCelular(celular));
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // Public porque SMovimiento la usa para transferir por celular
+    public MCuenta primeraCuentaPorCelular(String celular) throws ExcepcionNegocio {
+        MPerson persona = iPerson.findByTelephone(Validaciones.digitos(celular));
+        List<MCuenta> cuentas = persona == null ? List.of() : iCuenta.findByPersona_IdpersonOrderByIdAsc(persona.getIdperson());
+        if (cuentas.isEmpty()) {
+            throw error(HttpStatus.NOT_FOUND, "No hay una cuenta MiPlata registrada con ese celular.");
+        }
+        return cuentas.get(0);
+    }
+
+    // Cuenta con la que el usuario hace una operacion: debe existir, ser suya
+    // y estar activa. Asi nadie puede mover el dinero de otra persona.
+    public MCuenta cuentaDelUsuario(MPerson persona, String numerocuenta) throws ExcepcionNegocio {
+        MCuenta cuenta = iCuenta.findByNumerocuenta(Validaciones.digitos(numerocuenta));
+        if (cuenta == null) {
+            throw error(HttpStatus.NOT_FOUND, "Selecciona una de tus cuentas.");
+        }
+        if (cuenta.getPersona() == null || cuenta.getPersona().getIdperson() != persona.getIdperson()) {
+            throw error(HttpStatus.FORBIDDEN, "La cuenta no pertenece al usuario.");
+        }
+        if (!Boolean.TRUE.equals(cuenta.getEstado())) {
+            throw error(HttpStatus.CONFLICT, "La cuenta está inactiva.");
+        }
+        return cuenta;
+    }
+
+    private static DestinoResponse toDestino(MCuenta cuenta) {
+        MPerson titular = cuenta.getPersona();
+        return new DestinoResponse(titular.getName(), titular.getUsername(), CuentaMapper.tipo(cuenta), cuenta.getNumerocuenta());
     }
 
     // =====================  CONSULTAS  =====================

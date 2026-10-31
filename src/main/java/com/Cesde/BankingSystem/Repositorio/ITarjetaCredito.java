@@ -16,4 +16,8 @@ public interface ITarjetaCredito extends JpaRepository<MTarjetaCredito,Integer> 
 
     // tarjetas asociadas a una cuenta
     List<MTarjetaCredito> findByCuenta_Id (int Idcuenta);
+
+    // tarjeta de una persona (una por usuario), sin importar a cual de sus cuentas esta ligada
+    MTarjetaCredito findFirstByCuenta_Persona_Idperson (int Idperson);
+    boolean existsByNumerotarjeta (String Numerotarjeta);
 }

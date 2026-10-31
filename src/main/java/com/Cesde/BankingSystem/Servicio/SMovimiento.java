@@ -1,8 +1,13 @@
 package com.Cesde.BankingSystem.Servicio;
 
+import com.Cesde.BankingSystem.Dto.CuentaResponse;
+import com.Cesde.BankingSystem.Dto.OperacionRequest;
+import com.Cesde.BankingSystem.Dto.TransferenciaRequest;
+import com.Cesde.BankingSystem.Mapper.CuentaMapper;
 import com.Cesde.BankingSystem.Modelo.MCuenta;
 import com.Cesde.BankingSystem.Modelo.MCuentaCorriente;
 import com.Cesde.BankingSystem.Modelo.MMovimiento;
+import com.Cesde.BankingSystem.Modelo.MPerson;
 import com.Cesde.BankingSystem.Repositorio.ICuenta;
 import com.Cesde.BankingSystem.Repositorio.IMovimiento;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +18,9 @@ import com.Cesde.BankingSystem.Excepcion.ExcepcionNegocio;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+
+import static com.Cesde.BankingSystem.Mapper.MapperUtils.texto;
 
 // Servicio de MMovimiento: registra depositos, retiros y transferencias y
 // actualiza el saldo de la cuenta en la misma operacion.
@@ -25,12 +33,30 @@ public class SMovimiento {
     public static final String TRANSFERENCIA_SALIDA = "transfer-out";
     public static final String TRANSFERENCIA_ENTRADA = "transfer-in";
     public static final String INTERES = "interest";
+    // pago de la tarjeta de credito descontado de la cuenta (STarjetaCredito)
+    public static final String PAGO_TARJETA = "card-payment";
+
+    // destinos de las transferencias (mismas listas de TransferPanel.jsx)
+    public static final String MIPLATA = "MiPlata";
+    private static final List<String> BILLETERAS = List.of("Nequi", "Daviplata");
+    private static final List<String> BANCOS = List.of(
+            "Bancolombia", "Banco de Bogotá", "Davivienda", "BBVA Colombia", "Banco de Occidente",
+            "Banco Popular", "Scotiabank Colpatria", "Banco Caja Social", "Banco AV Villas", "Banco Agrario");
+    private static final Map<String, String> NOMBRES_DESTINO = Map.of(
+            CuentaMapper.TIPO_AHORRO, "de ahorros",
+            CuentaMapper.TIPO_CORRIENTE, "corriente");
 
     @Autowired
     IMovimiento iMovimiento;
 
     @Autowired
     ICuenta iCuenta;
+
+    @Autowired
+    SPerson sPerson;
+
+    @Autowired
+    SCuenta sCuenta;
 
     // =====================  ESCRITURA  =====================
 
@@ -92,6 +118,135 @@ public class SMovimiento {
             // error inesperado: se relanza con su mensaje y la causa original
             throw new Exception(error.getMessage(), error);
         }
+    }
+
+    // =====================  OPERACIONES DEL FRONTEND  =====================
+    // Reciben el username y el numero de cuenta, verifican que la cuenta sea
+    // del usuario y devuelven el usuario completo actualizado.
+
+    // Consignar en una cuenta del usuario
+    @Transactional(rollbackFor = Exception.class)
+    public CuentaResponse consignar(OperacionRequest datos) throws Exception {
+        try {
+            MPerson persona = sPerson.buscarPersonaActiva(datos.username());
+            double monto = Validaciones.montoEntero(datos.amount());
+            MCuenta cuenta = sCuenta.cuentaDelUsuario(persona, datos.accountNumber());
+            registrarMovimiento(cuenta, DEPOSITO, monto, "Consignación");
+            return sPerson.armarRespuesta(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // Retirar de una cuenta del usuario si tiene fondos
+    @Transactional(rollbackFor = Exception.class)
+    public CuentaResponse retirar(OperacionRequest datos) throws Exception {
+        try {
+            MPerson persona = sPerson.buscarPersonaActiva(datos.username());
+            double monto = Validaciones.montoEntero(datos.amount());
+            MCuenta cuenta = sCuenta.cuentaDelUsuario(persona, datos.accountNumber());
+            validarFondos(cuenta, monto);
+            registrarMovimiento(cuenta, RETIRO, -monto, "Retiro");
+            return sPerson.armarRespuesta(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // Transferencia desde TransferPanel.jsx. Casos:
+    //  - celular MiPlata: llega a la primera cuenta del dueno de ese celular
+    //  - cuenta MiPlata (AH/CC): el tipo debe coincidir; puede ser otra cuenta propia
+    //  - otro banco o Nequi/Daviplata: no se puede validar, solo se descuenta del origen
+    @Transactional(rollbackFor = Exception.class)
+    public CuentaResponse transferir(TransferenciaRequest datos) throws Exception {
+        try {
+            MPerson persona = sPerson.buscarPersonaActiva(datos.username());
+            double monto = Validaciones.montoEntero(datos.amount());
+            MCuenta origen = sCuenta.cuentaDelUsuario(persona, datos.fromAccountNumber());
+            String tipoDestino = texto(datos.destinationType());
+            String banco = texto(datos.bank());
+            String destino = Validaciones.digitos(datos.destination());
+            boolean esMiPlata = MIPLATA.equals(banco);
+
+            MCuenta cuentaDestino = null;
+            String descripcionSalida;
+            String descripcionEntrada = "Transferencia de " + persona.getUsername();
+
+            if (tipoDestino.equals("phone")) {
+                if (!destino.matches("3\\d{9}")) {
+                    throw error(HttpStatus.BAD_REQUEST, "El celular debe tener 10 dígitos y empezar por 3.");
+                }
+                if (esMiPlata) {
+                    if (destino.equals(persona.getTelephone())) {
+                        throw error(HttpStatus.BAD_REQUEST, "No puedes transferirte a tu propio celular. Para mover dinero entre tus cuentas usa el número de cuenta.");
+                    }
+                    cuentaDestino = sCuenta.primeraCuentaPorCelular(destino);
+                    descripcionSalida = "Transferencia a " + cuentaDestino.getPersona().getUsername();
+                } else if (BILLETERAS.contains(banco)) {
+                    descripcionSalida = "Transferencia a " + banco + " " + ultimos4(destino);
+                } else {
+                    throw error(HttpStatus.BAD_REQUEST, "Destino no válido.");
+                }
+            } else if (tipoDestino.equals(CuentaMapper.TIPO_AHORRO) || tipoDestino.equals(CuentaMapper.TIPO_CORRIENTE)) {
+                if (esMiPlata) {
+                    if (!destino.matches("\\d{10}")) {
+                        throw error(HttpStatus.BAD_REQUEST, "El número de cuenta MiPlata debe tener 10 dígitos.");
+                    }
+                    if (destino.equals(origen.getNumerocuenta())) {
+                        throw error(HttpStatus.BAD_REQUEST, "La cuenta de destino debe ser diferente a la de origen.");
+                    }
+                    cuentaDestino = iCuenta.findByNumerocuenta(destino);
+                    if (cuentaDestino == null || !Boolean.TRUE.equals(cuentaDestino.getEstado())) {
+                        throw error(HttpStatus.NOT_FOUND, "No encontramos una cuenta MiPlata con ese número.");
+                    }
+                    if (!CuentaMapper.tipo(cuentaDestino).equals(tipoDestino)) {
+                        throw error(HttpStatus.BAD_REQUEST, "El número no corresponde a una cuenta " + NOMBRES_DESTINO.get(tipoDestino) + ".");
+                    }
+                    boolean esPropia = cuentaDestino.getPersona().getIdperson() == persona.getIdperson();
+                    descripcionSalida = esPropia
+                            ? "Transferencia a tu cuenta " + ultimos4(destino)
+                            : "Transferencia a " + cuentaDestino.getPersona().getUsername();
+                    if (esPropia) {
+                        descripcionEntrada = "Transferencia desde tu cuenta " + ultimos4(origen.getNumerocuenta());
+                    }
+                } else if (BANCOS.contains(banco)) {
+                    if (!destino.matches("\\d{6,20}")) {
+                        throw error(HttpStatus.BAD_REQUEST, "El número de cuenta debe tener entre 6 y 20 dígitos.");
+                    }
+                    descripcionSalida = "Transferencia a " + banco + " " + ultimos4(destino);
+                } else {
+                    throw error(HttpStatus.BAD_REQUEST, "Banco no válido.");
+                }
+            } else {
+                throw error(HttpStatus.BAD_REQUEST, "Tipo de destino no válido.");
+            }
+
+            validarFondos(origen, monto);
+            registrarMovimiento(origen, TRANSFERENCIA_SALIDA, -monto, descripcionSalida);
+            if (cuentaDestino != null) {
+                registrarMovimiento(cuentaDestino, TRANSFERENCIA_ENTRADA, monto, descripcionEntrada);
+            }
+            return sPerson.armarRespuesta(persona);
+        } catch (ExcepcionNegocio error) {
+            // error de negocio: se relanza tal cual (conserva su mensaje y codigo HTTP)
+            throw error;
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // 1234567890 -> ****7890
+    private static String ultimos4(String numero) {
+        return "****" + numero.substring(numero.length() - 4);
     }
 
     // Metodo central: crea el movimiento y actualiza el saldo de la cuenta.
@@ -247,7 +402,7 @@ public class SMovimiento {
             disponible += corriente.getSobregiro();
         }
         if (monto > disponible) {
-            throw error(HttpStatus.CONFLICT, "Fondos insuficientes. Disponible: " + disponible + ".");
+            throw error(HttpStatus.CONFLICT, "Fondos insuficientes. Disponible: " + Validaciones.pesos(disponible) + ".");
         }
     }
 
