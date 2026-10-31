@@ -159,7 +159,8 @@ public class STarjetaCredito {
             if (monto > tarjeta.getDeudaactual()) {
                 throw error(HttpStatus.BAD_REQUEST, "El pago no puede ser mayor a la deuda (" + Validaciones.pesos(tarjeta.getDeudaactual()) + ").");
             }
-            if (monto > cuenta.getSaldo()) {
+            // en la cuenta corriente tambien cuenta el sobregiro
+            if (monto > SMovimiento.disponible(cuenta)) {
                 throw error(HttpStatus.CONFLICT, "No tienes saldo suficiente en esa cuenta.");
             }
 

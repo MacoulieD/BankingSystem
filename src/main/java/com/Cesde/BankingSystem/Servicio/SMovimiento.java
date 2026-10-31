@@ -396,11 +396,17 @@ public class SMovimiento {
 
     // Fondos disponibles = saldo, y en la cuenta corriente ademas el sobregiro.
     // Aqui se ve el polimorfismo: segun el tipo real de la cuenta cambia la regla.
-    private void validarFondos(MCuenta cuenta, double monto) throws ExcepcionNegocio {
+    // Public porque STarjetaCredito.pagar tambien lo usa.
+    public static double disponible(MCuenta cuenta) {
         double disponible = cuenta.getSaldo();
         if (cuenta instanceof MCuentaCorriente corriente) {
             disponible += corriente.getSobregiro();
         }
+        return disponible;
+    }
+
+    private void validarFondos(MCuenta cuenta, double monto) throws ExcepcionNegocio {
+        double disponible = disponible(cuenta);
         if (monto > disponible) {
             throw error(HttpStatus.CONFLICT, "Fondos insuficientes. Disponible: " + Validaciones.pesos(disponible) + ".");
         }
