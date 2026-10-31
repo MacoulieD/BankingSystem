@@ -34,9 +34,10 @@ public class STarjetaCredito {
     // reglas de la tarjeta (mismos valores de creditCard.js en el frontend)
     public static final double CUPO_MINIMO = 500_000;
     public static final double CUPO_MAXIMO = 20_000_000;
-    public static final int MAX_CUOTAS = 36;
-    public static final int CUOTAS_SIN_INTERES = 3;
-    public static final double TASA_MENSUAL = 0.019;
+    // plazos que el usuario puede elegir al comprar: 1 cuota sin interes y
+    // las demas con 1,8 % mensual
+    public static final List<Integer> CUOTAS_PERMITIDAS = List.of(1, 3, 6, 12, 24, 36);
+    public static final double TASA_MENSUAL = 0.018;
     private static final int ANIOS_VIGENCIA = 5;
 
     // tipos de movimiento de la tarjeta (columna movimiento_tarjeta.tipo)
@@ -108,8 +109,8 @@ public class STarjetaCredito {
             }
             double capital = Validaciones.montoEntero(datos.amount());
             Integer cuotas = datos.installments();
-            if (cuotas == null || cuotas < 1 || cuotas > MAX_CUOTAS) {
-                throw error(HttpStatus.BAD_REQUEST, "El número de cuotas debe estar entre 1 y " + MAX_CUOTAS + ".");
+            if (cuotas == null || !CUOTAS_PERMITIDAS.contains(cuotas)) {
+                throw error(HttpStatus.BAD_REQUEST, "Elige 1, 3, 6, 12, 24 o 36 cuotas.");
             }
             if (!Boolean.TRUE.equals(tarjeta.getActivo())) {
                 throw error(HttpStatus.CONFLICT, "La tarjeta está bloqueada: no permite compras.");
@@ -159,7 +160,8 @@ public class STarjetaCredito {
             if (monto > tarjeta.getDeudaactual()) {
                 throw error(HttpStatus.BAD_REQUEST, "El pago no puede ser mayor a la deuda (" + Validaciones.pesos(tarjeta.getDeudaactual()) + ").");
             }
-            if (monto > cuenta.getSaldo()) {
+            // en la cuenta corriente tambien cuenta el sobregiro
+            if (monto > SMovimiento.disponible(cuenta)) {
                 throw error(HttpStatus.CONFLICT, "No tienes saldo suficiente en esa cuenta.");
             }
 
@@ -237,13 +239,13 @@ public class STarjetaCredito {
     }
 
     // Plan de cuotas, igual que installmentPlan de creditCard.js:
-    //  - hasta 3 cuotas sin interes: cuota = techo(capital / cuotas), total = capital
-    //  - desde 4 cuotas, interes mensual con cuota fija (amortizacion francesa):
+    //  - 1 cuota: sin interes, total = capital
+    //  - 3, 6, 12, 24 o 36 cuotas: 1,8 % mensual con cuota fija (amortizacion francesa):
     //    cuota = techo(capital * i / (1 - (1 + i)^-n)), total = cuota * n
     // Devuelve {cuota, total}
     public static double[] planDeCuotas(double capital, int cuotas) {
-        if (cuotas <= CUOTAS_SIN_INTERES) {
-            return new double[]{Math.ceil(capital / cuotas), capital};
+        if (cuotas == 1) {
+            return new double[]{capital, capital};
         }
         double cuota = Math.ceil((capital * TASA_MENSUAL) / (1 - Math.pow(1 + TASA_MENSUAL, -cuotas)));
         return new double[]{cuota, cuota * cuotas};

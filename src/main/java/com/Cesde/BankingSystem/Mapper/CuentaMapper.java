@@ -20,7 +20,9 @@ public final class CuentaMapper {
     public static final String TIPO_AHORRO = "AH";
     public static final String TIPO_CORRIENTE = "CC";
     private static final double TASA_INTERES_AHORRO = 0.5;
-    private static final double SOBREGIRO_CORRIENTE = 0.0;
+    // la cuenta corriente puede quedar en negativo hasta el 20% del saldo con
+    // que se abrio (cupo fijo, como el que aprueba un banco)
+    public static final double PORCENTAJE_SOBREGIRO = 0.20;
 
     private CuentaMapper() {
     }
@@ -35,7 +37,8 @@ public final class CuentaMapper {
         MCuenta cuenta;
         if (TIPO_CORRIENTE.equals(MapperUtils.texto(tipoCuenta))) {
             MCuentaCorriente corriente = new MCuentaCorriente();
-            corriente.setSobregiro(SOBREGIRO_CORRIENTE);
+            // entero (pesos completos): 20% de 50.001 -> 10.000
+            corriente.setSobregiro(Math.floor(saldo * PORCENTAJE_SOBREGIRO));
             cuenta = corriente;
         } else {
             MCuentaAhorro ahorro = new MCuentaAhorro();
@@ -65,7 +68,8 @@ public final class CuentaMapper {
     }
 
     public static CuentaBancariaResponse toCuentaBancaria(MCuenta cuenta, List<MovimientoResponse> movimientos) {
-        return new CuentaBancariaResponse(tipo(cuenta), cuenta.getNumerocuenta(), cuenta.getSaldo(), movimientos);
+        double sobregiro = cuenta instanceof MCuentaCorriente corriente ? corriente.getSobregiro() : 0.0;
+        return new CuentaBancariaResponse(tipo(cuenta), cuenta.getNumerocuenta(), cuenta.getSaldo(), sobregiro, movimientos);
     }
 
     // "AH" o "CC" segun la clase concreta de la cuenta
