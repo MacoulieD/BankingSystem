@@ -11,6 +11,7 @@ MySQL → Spring Boot (`/api/reportes/...`) → JSON HTTP → Python `requests` 
 | GET | `/api/reportes/cuentas` | número de cuenta, tipo (AH/CC), saldo, estado, fecha de creación |
 | GET | `/api/reportes/movimientos` | número de cuenta, tipo, monto, fecha |
 | GET | `/api/reportes/tarjetas` | límite, deuda, activa, vencimiento (sin número ni CVV) |
+| GET | `/api/reportes/compras-tarjeta` | cuotas, capital, total con intereses, fecha (sin comercio ni datos de la tarjeta) |
 | GET | `/api/reportes/personas` | activo/bloqueado e intentos fallidos (sin datos personales) |
 
 ## Cómo ejecutarlo
@@ -35,6 +36,8 @@ MySQL → Spring Boot (`/api/reportes/...`) → JSON HTTP → Python `requests` 
 | `movimientos_por_tipo.png` | Depósitos, retiros, transferencias e intereses |
 | `dinero_movido_por_dia.png` | Suma de montos movidos cada día |
 | `uso_cupo_tarjetas.png` | Deuda vs límite de cada tarjeta |
+| `compras_tarjeta_por_cuotas.png` | Cuántas compras con tarjeta hay en cada plazo (1, 3, 6, 12, 24, 36 cuotas) |
+| `intereses_tarjeta_por_cuotas.png` | Capital vs intereses (1,8 % mensual) de las compras en cada plazo |
 | `usuarios_por_estado.png` | Usuarios activos vs bloqueados |
 
 Si una tabla está vacía (por ejemplo, todavía no hay movimientos o tarjetas), el script lo avisa y omite esas gráficas.
