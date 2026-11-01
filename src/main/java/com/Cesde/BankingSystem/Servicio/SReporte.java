@@ -1,5 +1,6 @@
 package com.Cesde.BankingSystem.Servicio;
 
+import com.Cesde.BankingSystem.Dto.ReporteCompraTarjeta;
 import com.Cesde.BankingSystem.Dto.ReporteCuenta;
 import com.Cesde.BankingSystem.Dto.ReporteMovimiento;
 import com.Cesde.BankingSystem.Dto.ReportePersona;
@@ -7,6 +8,7 @@ import com.Cesde.BankingSystem.Dto.ReporteTarjeta;
 import com.Cesde.BankingSystem.Mapper.ReporteMapper;
 import com.Cesde.BankingSystem.Repositorio.ICuenta;
 import com.Cesde.BankingSystem.Repositorio.IMovimiento;
+import com.Cesde.BankingSystem.Repositorio.IMovimientoTarjeta;
 import com.Cesde.BankingSystem.Repositorio.IPerson;
 import com.Cesde.BankingSystem.Repositorio.ITarjetaCredito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,9 @@ public class SReporte {
 
     @Autowired
     ITarjetaCredito iTarjetaCredito;
+
+    @Autowired
+    IMovimientoTarjeta iMovimientoTarjeta;
 
     @Autowired
     IPerson iPerson;
@@ -55,6 +60,17 @@ public class SReporte {
     public List<ReporteTarjeta> listarTarjetas() throws Exception {
         try {
             return iTarjetaCredito.findAll().stream().map(ReporteMapper::toTarjeta).toList();
+        } catch (Exception error) {
+            // error inesperado: se relanza con su mensaje y la causa original
+            throw new Exception(error.getMessage(), error);
+        }
+    }
+
+    // Todas las compras hechas con tarjeta de credito (sin los pagos)
+    public List<ReporteCompraTarjeta> listarComprasTarjeta() throws Exception {
+        try {
+            return iMovimientoTarjeta.findByTipo(STarjetaCredito.COMPRA).stream()
+                    .map(ReporteMapper::toCompraTarjeta).toList();
         } catch (Exception error) {
             // error inesperado: se relanza con su mensaje y la causa original
             throw new Exception(error.getMessage(), error);

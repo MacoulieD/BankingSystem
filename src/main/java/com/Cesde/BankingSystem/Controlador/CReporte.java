@@ -1,5 +1,6 @@
 package com.Cesde.BankingSystem.Controlador;
 
+import com.Cesde.BankingSystem.Dto.ReporteCompraTarjeta;
 import com.Cesde.BankingSystem.Dto.ReporteCuenta;
 import com.Cesde.BankingSystem.Dto.ReporteMovimiento;
 import com.Cesde.BankingSystem.Dto.ReportePersona;
@@ -39,6 +40,12 @@ public class CReporte {
     @GetMapping("/tarjetas")
     public ResponseEntity<List<ReporteTarjeta>> tarjetas() throws Exception {
         return ResponseEntity.ok(sReporte.listarTarjetas());
+    }
+
+    // GET /api/reportes/compras-tarjeta
+    @GetMapping("/compras-tarjeta")
+    public ResponseEntity<List<ReporteCompraTarjeta>> comprasTarjeta() throws Exception {
+        return ResponseEntity.ok(sReporte.listarComprasTarjeta());
     }
 
     // GET /api/reportes/personas

@@ -30,6 +30,8 @@ TIPOS_MOVIMIENTO = {
     "interest": "Intereses",
     "card-payment": "Pago de tarjeta",
 }
+# plazos que permite la tarjeta de crédito (STarjetaCredito.CUOTAS_PERMITIDAS)
+PLAZOS_TARJETA = [1, 3, 6, 12, 24, 36]
 
 
 def obtener(endpoint):
@@ -108,6 +110,7 @@ def graficar_movimientos(movimientos):
     print(conteo.to_string())
     ax = conteo.plot(kind="bar", title="Movimientos por tipo", xlabel="Tipo", ylabel="Cantidad", rot=20)
     ax.bar_label(ax.containers[0])
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))  # no hay "medio movimiento"
     guardar_grafica(ax, "movimientos_por_tipo.png")
 
     # 5. Dinero movido por día
@@ -136,6 +139,35 @@ def graficar_tarjetas(tarjetas):
     guardar_grafica(ax, "uso_cupo_tarjetas.png")
 
 
+def graficar_compras_tarjeta(compras):
+    print("\n--- Compras con tarjeta de crédito ---")
+    if compras.empty:
+        sin_datos("compras con tarjeta")
+        return
+    compras["intereses"] = compras["total"] - compras["capital"]
+    # se muestran todos los plazos, aunque alguno no tenga compras
+    por_plazo = (compras.groupby("cuotas")
+                 .agg(compras=("id", "size"), capital=("capital", "sum"), intereses=("intereses", "sum"))
+                 .reindex(PLAZOS_TARJETA, fill_value=0))
+    por_plazo.index = [f"{c} cuota" if c == 1 else f"{c} cuotas" for c in por_plazo.index]
+    print(por_plazo.to_string())
+    print(f"Intereses totales que generan las compras: {compras['intereses'].sum():,.0f}")
+
+    # 8. Cantidad de compras según el número de cuotas
+    ax = por_plazo["compras"].plot(kind="bar", title="Compras con tarjeta por número de cuotas",
+                                   xlabel="Plazo", ylabel="Cantidad de compras", rot=0)
+    ax.bar_label(ax.containers[0])
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))  # no hay "media compra"
+    guardar_grafica(ax, "compras_tarjeta_por_cuotas.png")
+
+    # 9. Valor de las compras: capital vs intereses (1,8 % mensual) por plazo
+    ax = por_plazo[["capital", "intereses"]].rename(columns={"capital": "Capital", "intereses": "Intereses"}).plot(
+        kind="bar", stacked=True, title="Capital e intereses de las compras por plazo",
+        xlabel="Plazo", ylabel="Monto", rot=0, color=["#1f77b4", "#ff7f0e"])
+    ax.yaxis.set_major_formatter(FORMATO_DINERO)
+    guardar_grafica(ax, "intereses_tarjeta_por_cuotas.png")
+
+
 def graficar_personas(personas):
     print("\n--- Usuarios ---")
     if personas.empty:
@@ -147,6 +179,7 @@ def graficar_personas(personas):
     print(conteo.to_string())
     ax = conteo.plot(kind="bar", title="Usuarios activos vs bloqueados", xlabel="Estado", ylabel="Cantidad", rot=0)
     ax.bar_label(ax.containers[0])
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))  # no hay "medio usuario"
     guardar_grafica(ax, "usuarios_por_estado.png")
 
 
@@ -156,19 +189,23 @@ def main():
     movimientos = obtener("movimientos")
     tarjetas = obtener("tarjetas")
     personas = obtener("personas")
+    compras = obtener("compras-tarjeta")
 
     print(f"\nTotal de usuarios: {len(personas)}")
     print(f"Total de cuentas: {len(cuentas)}")
     print(f"Total de movimientos: {len(movimientos)}")
     print(f"Total de tarjetas: {len(tarjetas)}")
+    print(f"Total de compras con tarjeta: {len(compras)}")
 
     for nombre, datos in [("cuentas", cuentas), ("movimientos", movimientos),
-                          ("tarjetas", tarjetas), ("usuarios", personas)]:
+                          ("tarjetas", tarjetas), ("usuarios", personas),
+                          ("compras_tarjeta", compras)]:
         datos.to_csv(SALIDA / f"{nombre}.csv", index=False, encoding="utf-8-sig")
 
     graficar_cuentas(cuentas)
     graficar_movimientos(movimientos)
     graficar_tarjetas(tarjetas)
+    graficar_compras_tarjeta(compras)
     graficar_personas(personas)
 
     print(f"\nInformes y gráficos guardados en: {SALIDA}")
