@@ -38,8 +38,8 @@ public class SMovimiento {
 
     // destinos de las transferencias (mismas listas de TransferPanel.jsx)
     public static final String MIPLATA = "MiPlata";
-    private static final List<String> BILLETERAS = List.of("Nequi", "Daviplata");
-    private static final List<String> BANCOS = List.of(
+    public static final List<String> BILLETERAS = List.of("Nequi", "Daviplata");
+    public static final List<String> BANCOS = List.of(
             "Bancolombia", "Banco de Bogotá", "Davivienda", "BBVA Colombia", "Banco de Occidente",
             "Banco Popular", "Scotiabank Colpatria", "Banco Caja Social", "Banco AV Villas", "Banco Agrario");
     private static final Map<String, String> NOMBRES_DESTINO = Map.of(
