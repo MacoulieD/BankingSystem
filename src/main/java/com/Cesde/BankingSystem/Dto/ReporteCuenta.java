@@ -8,6 +8,8 @@ public record ReporteCuenta(
         String numerocuenta,
         String tipocuenta,
         Double saldo,
+        // cupo de sobregiro: solo las cuentas corrientes, en ahorros es 0
+        Double sobregiro,
         Boolean estado,
         LocalDateTime createdat
 ) {

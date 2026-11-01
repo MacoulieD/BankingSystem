@@ -1,9 +1,11 @@
-"""Consume la API REST de BankingSystem (/api/reportes) y crea tablas CSV y
-gráficos con Pandas, NumPy y Matplotlib.
+"""Consume la API REST de BankingSystem (/api/reportes) y crea tablas CSV,
+gráficos PNG y el informe completo en PDF (informe_pdf.py) con Pandas, NumPy
+y Matplotlib.
 
 Requiere que el backend Spring Boot esté ejecutándose en el puerto 8080.
 """
 from pathlib import Path
+import os
 import sys
 import requests
 import pandas as pd
@@ -12,8 +14,10 @@ import matplotlib
 matplotlib.use("Agg")  # solo se guardan imágenes PNG, no se abren ventanas
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator, StrMethodFormatter
+from informe_pdf import generar_informe
 
-BASE_URL = "http://localhost:8080/api/reportes"
+# se puede cambiar con la variable de entorno BANKING_API (por ejemplo, otro puerto)
+BASE_URL = os.environ.get("BANKING_API", "http://localhost:8080/api/reportes")
 SALIDA = Path(__file__).resolve().parent / "reportes"
 SALIDA.mkdir(exist_ok=True)
 
@@ -207,6 +211,9 @@ def main():
     graficar_tarjetas(tarjetas)
     graficar_compras_tarjeta(compras)
     graficar_personas(personas)
+
+    paginas = generar_informe(SALIDA / "informe_banking.pdf", cuentas, movimientos, tarjetas, personas, compras)
+    print(f"\nInforme PDF guardado: informe_banking.pdf ({paginas} páginas)")
 
     print(f"\nInformes y gráficos guardados en: {SALIDA}")
     print("Listo. Revisa los archivos CSV y PNG generados en la carpeta reportes.")

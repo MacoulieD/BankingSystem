@@ -11,6 +11,7 @@ import com.Cesde.BankingSystem.Modelo.MMovimiento;
 import com.Cesde.BankingSystem.Modelo.MMovimientoTarjeta;
 import com.Cesde.BankingSystem.Modelo.MPerson;
 import com.Cesde.BankingSystem.Modelo.MTarjetaCredito;
+import com.Cesde.BankingSystem.Servicio.SMovimiento;
 
 // Convierte las entidades en los DTOs de reportes (solo datos no sensibles)
 public final class ReporteMapper {
@@ -23,6 +24,7 @@ public final class ReporteMapper {
                 cuenta.getNumerocuenta(),
                 cuenta instanceof MCuentaCorriente ? CuentaMapper.TIPO_CORRIENTE : CuentaMapper.TIPO_AHORRO,
                 cuenta.getSaldo(),
+                cuenta instanceof MCuentaCorriente corriente ? corriente.getSobregiro() : 0.0,
                 cuenta.getEstado(),
                 cuenta.getCreatedat());
     }
@@ -33,7 +35,31 @@ public final class ReporteMapper {
                 movimiento.getNumerocuenta(),
                 movimiento.getTipomovimiento(),
                 movimiento.getMonto(),
-                movimiento.getFecha());
+                movimiento.getFecha(),
+                destino(movimiento));
+    }
+
+    // A donde se envio una transferencia, sacado de su descripcion
+    // ("Transferencia a Nequi ****4567"). No devuelve usuarios ni numeros.
+    private static String destino(MMovimiento movimiento) {
+        if (!SMovimiento.TRANSFERENCIA_SALIDA.equals(movimiento.getTipomovimiento())) {
+            return null;
+        }
+        String descripcion = movimiento.getDescripcion() == null ? "" : movimiento.getDescripcion();
+        if (descripcion.startsWith("Transferencia a tu cuenta")) {
+            return "Entre mis cuentas";
+        }
+        for (String banco : SMovimiento.BILLETERAS) {
+            if (descripcion.startsWith("Transferencia a " + banco + " ")) {
+                return banco;
+            }
+        }
+        for (String banco : SMovimiento.BANCOS) {
+            if (descripcion.startsWith("Transferencia a " + banco + " ")) {
+                return banco;
+            }
+        }
+        return "Otro usuario MiPlata";
     }
 
     public static ReporteTarjeta toTarjeta(MTarjetaCredito tarjeta) {
