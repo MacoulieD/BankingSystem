@@ -12,6 +12,9 @@ public interface IMovimientoTarjeta extends JpaRepository<MMovimientoTarjeta,Int
     // historial de una tarjeta, del mas antiguo al mas reciente
     List<MMovimientoTarjeta> findByTarjeta_IdOrderByFechaAscIdAsc (int Idtarjeta);
 
+    // movimientos de un tipo (card-purchase o card-payment) para los reportes
+    List<MMovimientoTarjeta> findByTipo (String tipo);
+
     // al cancelar la tarjeta se borra su historial
     void deleteByTarjeta_Id (int Idtarjeta);
 }
