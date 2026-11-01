@@ -8,8 +8,8 @@ MySQL → Spring Boot (`/api/reportes/...`) → JSON HTTP → Python `requests` 
 ## Endpoints de reportes (solo lectura)
 | Método | Endpoint | Datos |
 |---|---|---|
-| GET | `/api/reportes/cuentas` | número de cuenta, tipo (AH/CC), saldo, estado, fecha de creación |
-| GET | `/api/reportes/movimientos` | número de cuenta, tipo, monto, fecha |
+| GET | `/api/reportes/cuentas` | número de cuenta, tipo (AH/CC), saldo, sobregiro, estado, fecha de creación |
+| GET | `/api/reportes/movimientos` | número de cuenta, tipo, monto, fecha y destino de las transferencias enviadas (banco, billetera o MiPlata) |
 | GET | `/api/reportes/tarjetas` | límite, deuda, activa, vencimiento (sin número ni CVV) |
 | GET | `/api/reportes/compras-tarjeta` | cuotas, capital, total con intereses, fecha (sin comercio ni datos de la tarjeta) |
 | GET | `/api/reportes/personas` | activo/bloqueado e intentos fallidos (sin datos personales) |
@@ -27,7 +27,33 @@ MySQL → Spring Boot (`/api/reportes/...`) → JSON HTTP → Python `requests` 
    python reporte_banking.py
    ```
 
-## Gráficos generados
+## Informe en PDF
+`reportes/informe_banking.pdf` (lo arma `informe_pdf.py`) reúne todo en un solo documento de 14 páginas. Cada página tiene su gráfica y un texto que explica lo que muestra, con cifras calculadas a partir de los datos:
+
+| Página | Contenido | Gráficas |
+|---|---|---|
+| 1 | Portada con indicadores generales | Tarjetas de cifras |
+| 2 | Cuentas por tipo | Dona + barras |
+| 3 | Ranking de cuentas por saldo (números ocultos ****1234) | Barras horizontales |
+| 4 | Distribución de saldos | Barras apiladas + cajas (boxplot) |
+| 5 | Sobregiro de las cuentas corrientes | Barras agrupadas |
+| 6 | Movimientos por tipo | Dona + barras horizontales |
+| 7 | Dinero que entra vs dinero que sale por día | Barras agrupadas |
+| 8 | Destinos de las transferencias | Dona + barras horizontales |
+| 9 | Actividad por día | Línea + barras |
+| 10 | Uso del cupo de las tarjetas | Dona + barras por nivel de uso |
+| 11 | Compras con tarjeta por número de cuotas | Dona + barras apiladas (capital + intereses) |
+| 12 | Costo de financiar una compra (1,8 % mensual) | Barras |
+| 13 | Usuarios activos, bloqueados e intentos fallidos | Dona + barras |
+| 14 | Conclusiones | Texto |
+
+Si el backend corre en otro puerto, usa la variable `BANKING_API`:
+```powershell
+$env:BANKING_API = "http://localhost:8081/api/reportes"
+python reporte_banking.py
+```
+
+## Gráficos generados (PNG)
 | Archivo | Qué muestra |
 |---|---|
 | `cuentas_por_tipo.png` | Ahorro vs Corriente (torta) |
